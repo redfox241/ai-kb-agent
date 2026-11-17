@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-KB 知识库 · 端口 @PORT@</title>
+<link rel="stylesheet" href="/static/single.css">
+</head>
+<body>
+  <div class="top">
+    <h1>📚 AI-KB 知识库</h1>
+    <div class="badge">
+      端口 <span class="port">@PORT@</span>
+      · <span id="health" class="ok">检测中…</span>
+      · <span id="chunks"></span>
+      · <b>单轮模式</b>（不带上下文）
+      · <a href="/">切到多轮对话 →</a>
+    </div>
+    <div class="nav">
+      <a href="/">多轮</a><a href="/single" class="on">单轮</a><a href="/eval">多维评估</a><a href="/analysis">分析</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="query">
+      <textarea id="q" placeholder="输入你的问题，例如：平型关大捷发生在哪一年？"></textarea>
+      <button id="btn">提问</button>
+    </div>
+    <div class="status" id="status"></div>
+
+    <div class="card" id="ansCard" hidden>
+      <h3>回答</h3>
+      <div class="answer" id="answer"></div>
+    </div>
+
+    <div class="card" id="stepsCard" hidden>
+      <h3>⚙️ 执行步骤<span class="steps-meta" id="stepsMeta"></span>
+        <button class="steps-act" id="stepsToggle" type="button">全部展开</button>
+      </h3>
+      <div id="steps"></div>
+    </div>
+
+    <div class="card" id="srcCard" hidden>
+      <h3>参考来源</h3>
+      <div id="srcs"></div>
+    </div>
+  </div>
+
+<script src="/static/single.js"></script>
+</body>
+</html>

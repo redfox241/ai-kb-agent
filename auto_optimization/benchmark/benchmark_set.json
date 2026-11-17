@@ -1,0 +1,95 @@
+{
+  "version": "v1",
+  "questions": [
+    {
+      "question": "长征从什么时候开始，走了多少公里？",
+      "tier": "high",
+      "baseline": 8.0
+    },
+    {
+      "question": "遵义会议有什么历史意义？",
+      "tier": "mid",
+      "baseline": 9.0
+    },
+    {
+      "question": "平型关大捷发生在哪一年？",
+      "tier": "bad",
+      "baseline": 10.0
+    },
+    {
+      "question": "抗日战争持续了多少年？",
+      "tier": "mid",
+      "baseline": 9.0
+    },
+    {
+      "question": "辽沈战役是在什么时间发生的？",
+      "tier": "bad",
+      "baseline": 10.0
+    },
+    {
+      "question": "两弹一星指的是什么？",
+      "tier": "high",
+      "baseline": 10.0
+    },
+    {
+      "question": "九一三事件是怎么回事？",
+      "tier": "bad",
+      "baseline": 9.0
+    },
+    {
+      "question": "十大元帅都有谁？",
+      "tier": "mid",
+      "baseline": 10.0
+    },
+    {
+      "question": "南昌起义发生在哪一天？",
+      "tier": "bad",
+      "baseline": 10.0
+    },
+    {
+      "question": "土地改革的意义是什么？",
+      "tier": "high",
+      "baseline": 9.0
+    },
+    {
+      "question": "黄埔军校的创立背景是什么？",
+      "tier": "mid",
+      "baseline": 9.0
+    },
+    {
+      "question": "抗美援朝的背景和意义是什么？",
+      "tier": "high",
+      "baseline": 8.0
+    },
+    {
+      "question": "什么是 RAG？",
+      "tier": "high",
+      "baseline": 10.0
+    },
+    {
+      "question": "RAG Triad（RAG 三元组）是指哪三个？",
+      "tier": "bad",
+      "baseline": 10.0
+    },
+    {
+      "question": "什么是 Model Context Protocol (MCP)？",
+      "tier": "mid",
+      "baseline": 10.0
+    },
+    {
+      "question": "ReAct 范式是什么？",
+      "tier": "bad",
+      "baseline": 10.0
+    },
+    {
+      "question": "managed-agents（托管代理）是什么？",
+      "tier": "mid",
+      "baseline": 10.0
+    },
+    {
+      "question": "什么是 self-referential feedback（自引用反馈）？",
+      "tier": "bad",
+      "baseline": 10.0
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-KB 知识库 · 多轮对话 · @PORT@</title>
+<link rel="stylesheet" href="/static/chat.css">
+</head>
+<body>
+<div class="top">
+  <h1>AI-KB 知识库</h1>
+  <span class="badge">端口 <b class="port">@PORT@</b> · <span id="health">检测中</span>
+    <span id="chunks"></span></span>
+  <div class="sp"></div>
+  <select id="sessionSel" title="切换会话"><option value="">（新会话）</option></select>
+  <button class="btn" id="newBtn" type="button">新会话</button>
+  <button class="btn" id="exportBtn" type="button">导出</button>
+  <button class="btn danger" id="delBtn" type="button">删除</button>
+  <a href="/single" target="_blank">单轮页</a>
+  <a href="/analysis" target="_blank">分析</a>
+</div>
+
+<div class="chat" id="chat"><div class="chat-inner" id="msgs">
+  <div class="empty" id="empty">
+    <div><b>支持多轮追问</b>：上下文会自动关联</div>
+    <div>试试：先问「长征从什么时候开始」，再问「它持续了多久？」</div>
+  </div>
+</div></div>
+
+<div class="composer">
+  <div class="composer-inner">
+    <textarea id="q" rows="1" placeholder="输入问题，Enter 发送，Shift+Enter 换行"></textarea>
+    <button class="send" id="sendBtn" type="button">发送</button>
+  </div>
+  <div class="hint" id="hint"></div>
+</div>
+
+<script src="/static/chat.js"></script>
+</body>
+</html>

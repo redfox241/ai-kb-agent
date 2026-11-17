@@ -1,0 +1,57 @@
+# 自迭代系统配置
+trigger:
+  immediate_threshold: 6        # 每次查询评估总分≤此值即时入队自演进
+  daemon_interval_sec: 60       # 守护进程轮询队列间隔
+  patrol_time: "09:00"          # 每日巡检时刻
+
+dedup:
+  cooldown_hours: 6            # 问题级 MD5 冷却
+  max_daily_triggers: 8        # 每日最多 Agent 优化次数
+  max_variants: 5              # 同意图变体最大保留数
+  intent_jaccard_threshold: 0.6
+
+priority:
+  affected_user_weight: 0.5    # 每多 1 个受影响用户提升的优先级
+  related_weight: 0.3          # 每多 1 个相关问题提升的优先级
+
+suppression:
+  success_days: 1              # 优化成功(>=7)抑制 1 天
+  edge_days: 3                 # 边缘通过(6-7)抑制 3 天
+  give_up_days: 30             # 优化失败抑制 30 天
+  regression_failed_days: 7    # 回归失败抑制 7 天
+  regression_failed_batch_days: 3
+  knowledge_gap_days: 30
+  resolved_days: 1
+
+# 业务区分词：不同区分词的问题强制不聚合（按知识域配置）
+domain_words:
+  - 长征
+  - 抗战
+  - 战役
+  - 解放
+  - 起义
+  - 元帅
+  - 土地改革
+  - 原子弹
+  - 氢弹
+  - 卫星
+  - RAG
+  - MCP
+  - 代理
+  - 范式
+  - 检索
+  - 反馈
+
+stopwords:
+  - 的
+  - 是
+  - 什么
+  - 怎么
+  - 为什么
+  - 多少
+  - 呢
+  - 吗
+  - 啊
+  - 了
+  - 在
+  - 有

@@ -1,0 +1,149 @@
+{
+  "version": "mt-v1",
+  "description": "多轮对话回归集：覆盖指代/省略/纠正/切换/比较/澄清/拒答/多跳。expect_* 字段用于自动判定，未给的维度不参与计分。",
+  "conversations": [
+    {
+      "id": "mt-001",
+      "category": "pronoun",
+      "turns": [
+        {"q": "长征从什么时候开始，走了多少公里？"},
+        {"q": "它持续了多久？", "expect_resolved_contains": ["长征"]}
+      ]
+    },
+    {
+      "id": "mt-002",
+      "category": "pronoun",
+      "turns": [
+        {"q": "RAG 是什么？"},
+        {"q": "它的主要流程有哪些？", "expect_resolved_contains": ["RAG"]}
+      ]
+    },
+    {
+      "id": "mt-003",
+      "category": "pronoun",
+      "turns": [
+        {"q": "两弹一星指的是什么？"},
+        {"q": "它是在什么背景下提出的？", "expect_resolved_contains": ["两弹一星"]}
+      ]
+    },
+    {
+      "id": "mt-004",
+      "category": "ellipsis",
+      "turns": [
+        {"q": "遵义会议有什么历史意义？"},
+        {"q": "那瓦窑堡会议呢？", "expect_resolved_contains": ["瓦窑堡"]}
+      ]
+    },
+    {
+      "id": "mt-005",
+      "category": "ellipsis",
+      "turns": [
+        {"q": "平型关大捷发生在哪一年？"},
+        {"q": "那台儿庄战役呢？", "expect_resolved_contains": ["台儿庄"]}
+      ]
+    },
+    {
+      "id": "mt-006",
+      "category": "ellipsis",
+      "turns": [
+        {"q": "什么是 RAG？"},
+        {"q": "那 MCP 呢？", "expect_resolved_contains": ["MCP"]}
+      ]
+    },
+    {
+      "id": "mt-007",
+      "category": "correction",
+      "turns": [
+        {"q": "平型关大捷是谁指挥的？"},
+        {"q": "不是林彪，是彭德怀吗？", "expect_resolved_contains": ["彭德怀"]}
+      ]
+    },
+    {
+      "id": "mt-008",
+      "category": "correction",
+      "turns": [
+        {"q": "讲讲长征的经过。"},
+        {"q": "不是长征，我想问的是抗战。", "expect_resolved_contains": ["抗战"]}
+      ]
+    },
+    {
+      "id": "mt-009",
+      "category": "switch",
+      "turns": [
+        {"q": "十大元帅都有谁？"},
+        {"q": "换个话题，土地改革的意义是什么？", "expect_resolved_contains": ["土地改革"]}
+      ]
+    },
+    {
+      "id": "mt-010",
+      "category": "switch",
+      "turns": [
+        {"q": "长征走了多少公里？"},
+        {"q": "说说平型关大捷的背景。", "expect_resolved_contains": ["平型关"]}
+      ]
+    },
+    {
+      "id": "mt-011",
+      "category": "comparison",
+      "turns": [
+        {"q": "RAG 和微调有什么区别？"},
+        {"q": "哪个更适合小团队？", "expect_resolved_contains": ["小团队"]}
+      ]
+    },
+    {
+      "id": "mt-012",
+      "category": "comparison",
+      "turns": [
+        {"q": "MCP 和普通 API 有什么区别？"},
+        {"q": "两者哪个更适合本地工具？", "expect_resolved_contains": ["本地工具"]}
+      ]
+    },
+    {
+      "id": "mt-013",
+      "category": "clarification",
+      "turns": [
+        {"q": "十大元帅都有谁？"},
+        {"q": "他参加过哪些战役？", "expect_rewrite": true}
+      ]
+    },
+    {
+      "id": "mt-014",
+      "category": "clarification",
+      "turns": [
+        {"q": "介绍一下那场战役。"},
+        {"q": "它发生在哪一年？", "expect_rewrite": true}
+      ]
+    },
+    {
+      "id": "mt-015",
+      "category": "refusal",
+      "turns": [
+        {"q": "十大元帅都有谁？"},
+        {"q": "他们各自的子女现在做什么？", "expect_refusal": true}
+      ]
+    },
+    {
+      "id": "mt-016",
+      "category": "refusal",
+      "turns": [
+        {"q": "明朝万历皇帝的生母是谁？", "expect_refusal": true}
+      ]
+    },
+    {
+      "id": "mt-017",
+      "category": "multi_hop",
+      "turns": [
+        {"q": "什么是 MCP？"},
+        {"q": "它的提出者还做过什么？", "expect_resolved_contains": ["MCP"]}
+      ]
+    },
+    {
+      "id": "mt-018",
+      "category": "multi_hop",
+      "turns": [
+        {"q": "什么是 ReAct 范式？"},
+        {"q": "它的核心思想来自哪些工作？", "expect_resolved_contains": ["ReAct"]}
+      ]
+    }
+  ]
+}

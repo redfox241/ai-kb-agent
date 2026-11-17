@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-KB 评估分析 · 端口 @PORT@</title>
+<link rel="stylesheet" href="/static/analysis.css">
+</head>
+<body>
+  <div class="top">
+    <h1>📊 AI-KB 评估分析</h1>
+    <div class="badge">端口 <span class="port">@PORT@</span></div>
+    <div class="nav">
+      <a href="/">问答</a><a href="/eval">多维评估</a><a href="/analysis" class="on">分析</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-t="overview">概览</button>
+    <button class="tab" data-t="visits">访问记录</button>
+    <button class="tab" data-t="evals">评估记录</button>
+  </div>
+
+  <div class="wrap">
+    <div class="load" id="loading">加载中…</div>
+
+    <!-- ============ 概览 ============ -->
+    <div class="panel" id="tab-overview" hidden>
+      <div class="row" id="stats"></div>
+
+      <div class="card">
+        <h3>🔄 索引管理</h3>
+        <div class="idx-info" id="idxInfo">加载中…</div>
+        <div style="display:flex; gap:12px; align-items:center; margin-top:10px;">
+          <button class="btn" id="reindexBtn" onclick="reindex()">重建索引</button>
+          <span class="mini" id="idxMsg" style="display:none"></span>
+        </div>
+        <div class="pbar" id="idxBar" style="display:none"><i></i></div>
+      </div>
+
+      <div class="flex2">
+        <div class="card">
+          <h3>评分等级分布</h3>
+          <div class="grade-bar">
+            <div id="gBad" style="background:var(--bad)"></div>
+            <div id="gMid" style="background:var(--mid)"></div>
+            <div id="gGood" style="background:var(--good)"></div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="card">
+          <h3>总分变化趋势（按天）</h3>
+          <div class="chart" id="chart"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>⚠️ 待改进问题（总分 &lt; 6）</h3>
+        <div id="low"></div>
+      </div>
+    </div>
+
+    <!-- ============ 访问记录 ============ -->
+    <div class="panel" id="tab-visits" hidden>
+      <div class="row" id="visitStats"></div>
+      <div class="card" style="margin-top:16px">
+        <h3>访问明细</h3>
+        <div class="bar-tools">
+          <button class="chip on" data-k="">全部</button>
+          <button class="chip" data-k="query">问答查询</button>
+          <button class="chip" data-k="page">页面访问</button>
+          <input class="kw" id="visitKw" placeholder="搜索问题 / 页面 / 端点">
+          <button class="btn ghost" onclick="loadVisits(true)">查询</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>时间</th><th>类型</th><th>内容</th><th>端点</th>
+            <th>来源</th><th>步骤</th><th>耗时</th><th>状态</th>
+          </tr></thead>
+          <tbody id="visitRows"></tbody>
+        </table>
+        <div class="more"><button class="btn ghost" id="visitMore" onclick="loadVisits(false)">加载更多</button></div>
+      </div>
+    </div>
+
+    <!-- ============ 评估记录 ============ -->
+    <div class="panel" id="tab-evals" hidden>
+      <div class="row" id="evalSummary"></div>
+      <div class="card" style="margin-top:16px">
+        <h3>评估明细（点击行展开详情）</h3>
+        <div class="bar-tools">
+          <button class="chip on" data-s="">全部</button>
+          <button class="chip" data-s="bad">待改进 &lt;6</button>
+          <button class="chip" data-s="mid">中等 6-8</button>
+          <button class="chip" data-s="good">优秀 ≥8</button>
+          <input class="kw" id="evalKw" placeholder="搜索问题 / 回答内容">
+          <button class="btn ghost" onclick="loadEvals(true)">查询</button>
+        </div>
+        <table>
+          <thead><tr>
+            <th>时间</th><th>问题</th><th>总分</th>
+            <th>准确</th><th>相关</th><th>完整</th><th>表达</th><th>来源</th>
+            <th>耗时</th><th>主要弱点</th>
+          </tr></thead>
+          <tbody id="evalRows"></tbody>
+        </table>
+        <div class="more"><button class="btn ghost" id="evalMore" onclick="loadEvals(false)">加载更多</button></div>
+      </div>
+    </div>
+  </div>
+
+<script src="/static/analysis.js"></script>
+</body>
+</html>

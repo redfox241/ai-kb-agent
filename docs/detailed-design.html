@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="AI-KB 详细设计：模块接口、领域模型、SQL、API 契约、测试与迁移任务。">
+<title>AI-KB 详细设计 · Implementation Design v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8EAE3;
+  --paper-2:#F2F3EC;
+  --paper-3:#DDE1D6;
+  --ink:#17231E;
+  --ink-soft:#455249;
+  --ink-faint:#6F7C72;
+  --line:#C2C9BB;
+  --line-dark:#96A195;
+  --pine:#1E4D3D;
+  --pine-2:#2F6B54;
+  --clay:#B24F2C;
+  --amber:#D5A02A;
+  --sage:#8FA88B;
+  --mint:#CFE0D6;
+  --white:#FBFCF7;
+  --maxw:1200px;
+  --display:"Bricolage Grotesque","Avenir Next","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"PingFang SC",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--mint);color:var(--ink)}
+a{color:var(--pine);text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--clay)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--clay);outline-offset:3px}
+.skip-link{
+  position:absolute;left:16px;top:-60px;z-index:100;
+  background:var(--ink);color:var(--paper);padding:10px 14px;
+  font-family:var(--mono);font-size:12px;text-decoration:none;
+}
+.skip-link:focus{top:16px}
+
+/* ---------- cover ---------- */
+.cover{
+  position:relative;
+  overflow:hidden;
+  border-bottom:1px solid var(--line-dark);
+  padding:clamp(28px,5vw,56px) clamp(20px,5vw,64px) 0;
+  background:
+    linear-gradient(to right, rgba(30,77,61,.045) 1px, transparent 1px) 0 0/72px 72px,
+    linear-gradient(to bottom, rgba(30,77,61,.045) 1px, transparent 1px) 0 0/72px 72px,
+    var(--paper);
+}
+.cover::after{
+  content:"00";
+  position:absolute;right:-2vw;bottom:-12vw;
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(220px,32vw,520px);line-height:.75;
+  color:rgba(30,77,61,.055);
+  pointer-events:none;
+}
+.cover-grid{
+  position:relative;z-index:1;
+  max-width:var(--maxw);margin:0 auto;
+  display:grid;grid-template-columns:1.38fr .62fr;gap:clamp(24px,4vw,56px);
+  align-items:center;
+  padding-bottom:clamp(30px,4vw,56px);
+}
+.eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--clay)}
+h1{
+  font-family:var(--display);
+  font-size:clamp(44px,7.2vw,104px);
+  line-height:.92;letter-spacing:-.045em;font-weight:600;
+  margin:18px 0 22px;
+}
+h1 em{font-style:normal;color:var(--clay)}
+.lede{
+  max-width:60ch;color:var(--ink-soft);font-size:clamp(15px,1.5vw,18px);
+  line-height:1.7;margin:0 0 22px;
+}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:26px}
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:9px;
+  letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--line-dark);padding:3px 7px;
+  white-space:nowrap;color:var(--ink-soft);background:rgba(251,252,247,.35);
+}
+.chip.pine{border-color:var(--pine);color:var(--pine)}
+.chip.clay{border-color:var(--clay);color:var(--clay)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line-dark)}
+.stat{padding:12px 12px 0 0;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:var(--display);font-size:clamp(24px,3vw,36px);line-height:1;font-weight:600}
+.stat span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--ink-faint);margin-top:6px;text-transform:uppercase}
+.cover-visual{position:relative}
+.cover-visual svg{width:100%;height:auto;display:block}
+.cover-visual figcaption{
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--ink-faint);
+  text-transform:uppercase;margin-top:8px;text-align:right;
+}
+.cover-strip{
+  position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;
+  border-top:1px solid var(--line-dark);
+  padding:12px 0 14px;
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-soft);
+  text-transform:uppercase;
+}
+.cover-strip strong{color:var(--clay);font-weight:500}
+
+/* ---------- shell / toc ---------- */
+.shell{
+  max-width:var(--maxw);margin:0 auto;
+  display:grid;grid-template-columns:210px minmax(0,1fr);
+  gap:clamp(24px,4vw,56px);
+  padding:0 clamp(20px,4vw,40px);
+}
+.toc{
+  position:sticky;top:22px;align-self:start;
+  padding:32px 0 24px;max-height:calc(100vh - 44px);overflow:auto;
+  scrollbar-width:thin;
+}
+.toc-title{
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  color:var(--ink-faint);text-transform:uppercase;
+  border-bottom:1px solid var(--line-dark);padding-bottom:8px;margin-bottom:8px;
+}
+.toc a{
+  display:flex;gap:9px;align-items:baseline;
+  padding:7px 2px;border-bottom:1px solid var(--line);
+  color:var(--ink-soft);text-decoration:none;font-size:13px;line-height:1.35;
+}
+.toc a .n{font-family:var(--mono);font-size:9px;color:var(--ink-faint);min-width:18px}
+.toc a:hover{color:var(--pine)}
+.toc a.active{color:var(--clay)}
+.toc a.active .n{color:var(--clay)}
+.toc-meta{
+  margin-top:18px;padding-top:12px;border-top:1px solid var(--line-dark);
+  font-family:var(--mono);font-size:9px;line-height:1.8;color:var(--ink-faint);
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.toc-progress{margin-top:14px}
+.toc-progress .bar{height:5px;border:1px solid var(--line-dark);background:var(--paper-2);margin-top:6px}
+.toc-progress .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.toc-progress .txt{font-family:var(--mono);font-size:9px;color:var(--ink-faint);letter-spacing:.06em}
+
+/* ---------- sections ---------- */
+main{min-width:0;padding-bottom:40px}
+section{
+  position:relative;
+  padding:clamp(46px,6vw,82px) 0;
+  border-top:1px solid var(--line-dark);
+}
+section:first-of-type{border-top:0;padding-top:46px}
+.sec-head{position:relative;margin-bottom:26px}
+.ghost-num{
+  position:absolute;right:-.02em;top:-.35em;
+  font-family:var(--display);font-weight:700;font-size:clamp(64px,10vw,140px);
+  line-height:.75;color:rgba(30,77,61,.07);pointer-events:none;user-select:none;
+}
+.kicker{
+  position:relative;z-index:1;
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--clay);
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+}
+.kicker::before{content:"";width:26px;height:1px;background:var(--clay)}
+h2{
+  position:relative;z-index:1;
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(28px,3.8vw,46px);line-height:1.02;
+  letter-spacing:-.025em;margin:10px 0 12px;max-width:24ch;
+}
+h3{
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(20px,2.2vw,26px);line-height:1.18;
+  letter-spacing:-.015em;margin:38px 0 10px;
+}
+h4{
+  font-family:var(--body);font-weight:600;font-size:14px;
+  line-height:1.35;margin:0 0 5px;
+}
+.intro{max-width:66ch;color:var(--ink-soft);font-size:15px;margin:0 0 22px}
+p{max-width:70ch}
+.small{font-size:13.5px;color:var(--ink-soft)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--ink-faint)}
+
+/* ---------- grids / cards ---------- */
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{
+  border:1px solid var(--line-dark);
+  background:rgba(251,252,247,.45);
+  padding:16px 18px;
+  min-width:0;
+}
+.card.pine{border-top:3px solid var(--pine)}
+.card.accent{border-top:3px solid var(--clay)}
+.card.amber{border-top:3px solid var(--amber)}
+.card p{margin:0;font-size:13px;line-height:1.62;color:var(--ink-soft)}
+.card ul{margin:6px 0 0;padding-left:16px;font-size:13px;color:var(--ink-soft)}
+.card li{margin:3px 0}
+.card .tagline{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
+.metric b{display:block;font-family:var(--display);font-size:clamp(26px,3.2vw,40px);line-height:1;font-weight:600;letter-spacing:-.02em}
+.metric span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+.metric p{margin-top:8px}
+
+/* ---------- notes / quote ---------- */
+.note{
+  border-left:3px solid var(--amber);
+  background:rgba(213,160,42,.07);
+  padding:13px 16px;font-size:13px;color:var(--ink-soft);
+  margin:18px 0;
+}
+.note strong{color:var(--ink)}
+.note.pine{border-left-color:var(--pine);background:rgba(30,77,61,.05)}
+.note.clay{border-left-color:var(--clay);background:rgba(178,79,44,.06)}
+.quote{
+  border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark);
+  padding:22px 0;margin:30px 0;
+  font-family:var(--display);font-size:clamp(21px,2.9vw,32px);
+  line-height:1.25;letter-spacing:-.02em;max-width:34ch;
+}
+.quote em{font-style:normal;color:var(--clay)}
+.quote cite{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:10px}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line-dark)}
+table{width:100%;border-collapse:collapse;min-width:620px;font-size:13px}
+th{
+  background:var(--ink);color:var(--paper);
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  text-transform:uppercase;text-align:left;font-weight:500;
+  padding:9px 12px;white-space:nowrap;
+}
+td{
+  border-bottom:1px solid var(--line);
+  padding:9px 12px;vertical-align:top;color:var(--ink-soft);
+  line-height:1.55;
+}
+tr:last-child td{border-bottom:0}
+td strong,td b{color:var(--ink)}
+td code,th code{font-family:var(--mono);font-size:11.5px;color:var(--pine)}
+.sev{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border:1px solid currentColor;white-space:nowrap}
+.sev.high{color:var(--clay)}
+.sev.mid{color:#8a6a14}
+.sev.low{color:var(--pine)}
+.num{text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}
+
+/* ---------- code ---------- */
+pre.code{
+  position:relative;overflow-x:auto;
+  background:var(--ink);color:#E7EBE2;
+  border:1px solid var(--ink);
+  padding:16px 18px;margin:16px 0;
+  font-family:var(--mono);font-size:12px;line-height:1.65;
+  tab-size:2;
+}
+pre.code code{font-family:inherit;white-space:pre}
+pre.code .c{color:#9CAF9F}
+pre.code .k{color:#E0B15A}
+pre.code .s{color:#B9D2BE}
+.copy-btn{
+  position:absolute;right:8px;top:8px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+  border:1px solid #5B6B5E;color:#C9D2C4;background:rgba(23,35,30,.75);
+  padding:3px 7px;text-transform:uppercase;
+}
+.copy-btn:hover{color:#fff;border-color:#9CAF9F}
+code.inline{
+  font-family:var(--mono);font-size:.9em;
+  background:rgba(30,77,61,.08);color:var(--pine);
+  padding:1px 4px;
+}
+
+/* ---------- diagrams ---------- */
+.figure{margin:20px 0;border:1px solid var(--line-dark);background:rgba(251,252,247,.35);padding:16px}
+.figure svg{width:100%;height:auto;display:block}
+.figcap{
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-faint);
+  margin-top:10px;padding-top:8px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.layer-stack{border:1px solid var(--line-dark);margin:18px 0}
+.layer{
+  display:grid;grid-template-columns:64px minmax(0,1fr);
+  border-bottom:1px solid var(--line-dark);background:rgba(251,252,247,.4);
+}
+.layer:last-child{border-bottom:0}
+.layer-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  display:flex;align-items:center;justify-content:center;
+  border-right:1px solid var(--line-dark);color:var(--ink-faint);
+  background:var(--paper-3);
+}
+.layer-body{padding:11px 14px}
+.layer-body strong{font-size:14px}
+.layer-body span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:3px}
+.stack-arrow{
+  text-align:center;font-family:var(--mono);font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--clay);
+  padding:6px 0;border-bottom:1px solid var(--line);
+  background:rgba(178,79,44,.04);
+}
+.pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line-dark);margin:16px 0}
+.pipeline .step{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px;min-width:0;background:rgba(251,252,247,.35)}
+.pipeline .step:nth-child(5n){border-right:0}
+.pipeline .step:nth-last-child(-n+5){border-bottom:0}
+.pipeline .n{font-family:var(--mono);font-size:9px;color:var(--clay);letter-spacing:.06em}
+.pipeline h5{font-family:var(--body);font-size:12.5px;margin:3px 0 3px;font-weight:600}
+.pipeline p{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin:0}
+.pipeline .io{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--ink-faint);margin-top:6px;text-transform:uppercase}
+.flow{border:1px solid var(--line-dark);margin:16px 0}
+.flow-row{display:grid;grid-template-columns:44px minmax(0,1fr);border-bottom:1px solid var(--line)}
+.flow-row:last-child{border-bottom:0}
+.flow-n{
+  display:flex;align-items:flex-start;justify-content:center;padding-top:13px;
+  font-family:var(--mono);font-size:10px;color:var(--clay);
+  border-right:1px solid var(--line);background:rgba(178,79,44,.04);
+}
+.flow-body{padding:11px 14px}
+.flow-body strong{font-size:13.5px}
+.flow-body p{font-size:12.5px;line-height:1.55;color:var(--ink-soft);margin:2px 0 0}
+.flow-body .io{font-family:var(--mono);font-size:9px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+
+/* ---------- tree ---------- */
+.tree{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.4);
+  padding:16px 18px;margin:16px 0;overflow-x:auto;
+  font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink-soft);
+  white-space:pre;
+}
+.tree b{color:var(--pine);font-weight:500}
+.tree i{color:var(--ink-faint);font-style:normal}
+.tree em{color:var(--clay);font-style:normal}
+
+/* ---------- timeline ---------- */
+.timeline{border:1px solid var(--line-dark);margin:18px 0;background:rgba(251,252,247,.4)}
+.tl-head,.tl-row{display:grid;grid-template-columns:170px repeat(16,minmax(0,1fr));align-items:center}
+.tl-head{border-bottom:1px solid var(--line-dark);background:var(--ink);color:var(--paper)}
+.tl-head span{font-family:var(--mono);font-size:8px;letter-spacing:.06em;text-align:center;padding:7px 2px;border-right:1px solid rgba(232,234,227,.16)}
+.tl-head span:first-child{text-align:left;padding-left:12px}
+.tl-row{border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:0}
+.tl-label{font-family:var(--mono);font-size:10px;padding:7px 12px;color:var(--ink-soft)}
+.tl-track{grid-column:2 / -1;display:grid;grid-template-columns:repeat(16,minmax(0,1fr));height:24px;align-items:center;position:relative}
+.tl-track::before{content:"";position:absolute;inset:0;background:linear-gradient(to right,var(--line) 1px,transparent 1px) 0 0/calc(100%/16) 100%}
+.tl-track i{display:block;height:8px;background:var(--pine);margin:0 2px;position:relative;z-index:1}
+.tl-track i.p0{background:var(--clay)}
+.tl-track i.p1{background:var(--amber)}
+.tl-track i.p2{background:var(--sage)}
+.tl-track i.p3{background:var(--pine-2)}
+.tl-track i.p4{background:var(--pine)}
+.tl-track i.p5{background:var(--ink-soft)}
+.tl-legend{font-family:var(--mono);font-size:9px;color:var(--ink-faint);padding:8px 12px;border-top:1px solid var(--line)}
+
+/* ---------- decision / checklist ---------- */
+.decision{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.45);
+  padding:14px 16px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;
+  align-items:start;
+}
+.decision input,.check-item input{
+  appearance:none;width:15px;height:15px;border:1px solid var(--line-dark);
+  background:var(--paper-2);margin:3px 0 0;display:grid;place-content:center;cursor:pointer;
+}
+.decision input::before,.check-item input::before{
+  content:"";width:9px;height:9px;transform:scale(0);transition:transform .12s ease;
+  background:var(--pine);
+}
+.decision input:checked::before,.check-item input:checked::before{transform:scale(1)}
+.decision h4{font-size:13.5px}
+.decision p{font-size:12.5px;color:var(--ink-soft);margin:2px 0 0}
+.decision .rec{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--pine);margin-top:6px}
+.checklist{border:1px solid var(--line-dark);margin:16px 0;background:rgba(251,252,247,.35)}
+.check-group{border-bottom:1px solid var(--line-dark);padding:12px 16px}
+.check-group:last-child{border-bottom:0}
+.check-group h4{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+.check-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:5px 0;font-size:13px;color:var(--ink-soft)}
+.check-item label{cursor:pointer}
+.progress-block{margin-top:16px;border:1px solid var(--line-dark);padding:12px 14px;background:rgba(30,77,61,.04)}
+.progress-block .top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.progress-block .bar{height:8px;border:1px solid var(--line-dark);background:var(--paper-2)}
+.progress-block .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.reviewbar{
+  position:fixed;right:16px;bottom:16px;z-index:50;
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line-dark);background:rgba(242,243,236,.96);
+  padding:7px 8px;box-shadow:0 1px 0 rgba(23,35,30,.08);
+}
+.reviewbar .rb-progress{width:110px}
+.reviewbar .rb-progress .txt{font-family:var(--mono);font-size:8px;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase}
+.reviewbar .rb-progress .bar{height:4px;border:1px solid var(--line-dark);margin-top:3px}
+.reviewbar .rb-progress .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.reviewbar button{
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--line-dark);padding:4px 7px;color:var(--ink-soft);
+}
+.reviewbar button:hover{border-color:var(--pine);color:var(--pine)}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--line-dark);margin-top:20px;
+  padding:22px clamp(20px,4vw,40px) 70px;
+  max-width:var(--maxw);margin-left:auto;margin-right:auto;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+}
+.end-mark{display:flex;align-items:center;gap:8px}
+.end-mark::before{content:"";width:22px;height:1px;background:var(--clay)}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .cover-grid{grid-template-columns:1fr}
+  .cover-visual{max-width:420px;margin:0 auto;order:-1}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat{border-bottom:1px solid var(--line);padding-bottom:10px}
+  .stat:nth-child(2n){border-right:0}
+  .shell{grid-template-columns:1fr;gap:0}
+  .toc{position:static;max-height:none;overflow:visible;padding:18px 0 0;border-bottom:1px solid var(--line-dark)}
+  .toc a{display:inline-flex;border:1px solid var(--line);margin:0 4px 4px 0;padding:4px 6px;font-size:12px}
+  .toc a .n{min-width:0}
+  .toc-meta,.toc-progress{display:none}
+  .grid-3,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline .step:nth-child(5n){border-right:1px solid var(--line)}
+  .pipeline .step:nth-child(2n){border-right:0}
+  .tl-head,.tl-row{grid-template-columns:130px repeat(16,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:1fr}
+  .pipeline .step{border-right:0!important}
+  .sec-head h2{max-width:100%}
+  .ghost-num{font-size:64px;top:-.2em}
+  .reviewbar{right:10px;bottom:10px}
+  .reviewbar .rb-progress{display:none}
+  .tl-head,.tl-row{grid-template-columns:110px repeat(16,minmax(0,1fr))}
+  .tl-label{font-size:9px;padding-left:8px}
+}
+@media (max-width:460px){
+  .cover{padding-left:16px;padding-right:16px}
+  .stats{grid-template-columns:1fr}
+  .stat{border-right:0}
+  .ghost-num{display:none}
+  .figure{padding:10px}
+  .toc a{font-size:11px}
+  .reviewbar{padding:5px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  @page{size:A4;margin:12mm 10mm}
+  :root{--paper:#fff;--paper-2:#fff;--paper-3:#f2f2f2;--ink:#000;--ink-soft:#222;--ink-faint:#555;--line:#bbb;--line-dark:#888}
+  body{background:#fff;color:#000;font-size:10pt}
+  .cover{padding:0 0 18px;background:#fff!important;border-bottom:2px solid #000;page-break-after:always}
+  .cover::after,.ghost-num{display:none}
+  .cover-grid{grid-template-columns:1fr .5fr!important;gap:20px}
+  .cover-visual{order:0}
+  h1{font-size:30pt}
+  .lede{font-size:10pt}
+  .stats{grid-template-columns:repeat(4,1fr)!important}
+  .stat{border-right:1px solid var(--line)!important;border-bottom:0!important;padding-bottom:0!important}
+  .stat b{font-size:16pt}
+  .toc,.reviewbar,.copy-btn,.skip-link{display:none!important}
+  .shell{display:block;max-width:none;padding:0}
+  main{max-width:none}
+  section{padding:16px 0;border-top:1px solid #999;break-inside:auto}
+  .card,.figure,.table-wrap,.pipeline,.flow,.checklist,.timeline,.decision,.quote,.note,.check-group{break-inside:avoid}
+  .reveal{opacity:1!important;transform:none!important}
+  a{color:#000;text-decoration:underline}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .pipeline{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .pipeline .step{border-right:1px solid var(--line)!important}
+  .pipeline .step:nth-child(2n){border-right:0!important}
+  table{min-width:0!important;font-size:8pt}
+  .table-wrap{overflow:visible}
+  .tree{font-size:7.5pt;white-space:pre-wrap;word-break:break-word}
+  pre.code{font-size:8pt;white-space:pre-wrap;word-break:break-word;background:#f4f4f4;color:#000;border:1px solid #999}
+  pre.code .c{color:#555} pre.code .k{color:#7a4b00} pre.code .s{color:#225522}
+  th{background:#000;color:#fff}
+  .intro,.small,.card p,.card ul{font-size:9pt}
+  .quote{font-size:16pt}
+  footer{padding-bottom:0}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .toc-progress .bar i,.reviewbar .rb-progress .bar i,.progress-block .bar i{transition:none}
+}
+/* ---------- detailed design additions ---------- */
+.cover h1{font-size:clamp(40px,6.6vw,92px)}
+h2{max-width:34ch;text-wrap:balance}
+h3{text-wrap:balance}
+.spec-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.spec{border:1px solid var(--line-dark);background:rgba(251,252,247,.45);padding:14px 16px;min-width:0}
+.spec .code{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--clay);margin-bottom:4px}
+.spec h4{font-size:14px;margin-bottom:4px}
+.spec p{font-size:12.5px;line-height:1.58;margin:0;color:var(--ink-soft)}
+.sig{background:var(--ink);color:#E7EBE2;border:1px solid var(--ink);padding:14px 16px;margin:14px 0;overflow-x:auto}
+.sig pre{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.65;white-space:pre}
+.sig .c{color:#9CAF9F}
+.sig .k{color:#E0B15A}
+.sig .s{color:#B9D2BE}
+.sig .n{color:#D9A6A0}
+.field-table{min-width:760px}
+.field-table td:first-child{font-family:var(--mono);font-size:11.5px;color:var(--pine);white-space:nowrap}
+.field-table td:nth-child(2){font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);white-space:nowrap}
+.seq{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--line-dark);margin:16px 0}
+.seq .cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:11px;min-width:0;background:rgba(251,252,247,.35)}
+.seq .cell:nth-child(6n){border-right:0}
+.seq .cell:nth-last-child(-n+6){border-bottom:0}
+.seq .n{font-family:var(--mono);font-size:9px;color:var(--clay);letter-spacing:.05em}
+.seq h5{font-size:12px;margin:2px 0 3px;font-weight:600}
+.seq p{font-size:11px;line-height:1.45;margin:0;color:var(--ink-soft)}
+.seq .out{font-family:var(--mono);font-size:8px;letter-spacing:.03em;color:var(--ink-faint);margin-top:5px;text-transform:uppercase}
+.state{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line-dark);margin:14px 0}
+.state .st{padding:12px;border-right:1px solid var(--line);min-width:0;background:rgba(251,252,247,.35)}
+.state .st:last-child{border-right:0}
+.state .st b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--pine)}
+.state .st span{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+.state .st.bad b{color:var(--clay)}
+.task{border:1px solid var(--line-dark);background:rgba(251,252,247,.45);padding:13px 15px;min-width:0}
+.task .id{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--clay)}
+.task h4{font-size:13.5px;margin:2px 0 4px}
+.task p{font-size:12px;line-height:1.55;margin:0;color:var(--ink-soft)}
+.task .files{font-family:var(--mono);font-size:9px;line-height:1.6;color:var(--ink-faint);margin-top:7px;word-break:break-all}
+.task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.pr-table{min-width:900px}
+.pr-table td:first-child{font-family:var(--mono);font-size:10px;color:var(--clay);white-space:nowrap}
+.pr-table td:nth-child(2){font-weight:600;color:var(--ink)}
+.rollback{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.rollback .rb{border:1px solid var(--line-dark);border-left:3px solid var(--clay);padding:11px 13px;background:rgba(178,79,44,.04)}
+.rollback .rb h4{font-size:13px;margin-bottom:3px}
+.rollback .rb p{font-size:11.5px;line-height:1.5;margin:0;color:var(--ink-soft)}
+.code-map{min-width:860px}
+.code-map td:first-child{font-family:var(--mono);font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.code-map td:nth-child(2){font-family:var(--mono);font-size:11px;color:var(--pine);white-space:nowrap}
+.tag-row{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 0}
+.small-list{font-size:12.5px;line-height:1.7;color:var(--ink-soft);padding-left:18px;margin:8px 0}
+.small-list li{margin:3px 0}
+.small-list code{font-family:var(--mono);font-size:11px;color:var(--pine)}
+@media (max-width:980px){
+  .spec-grid,.task-grid,.rollback{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seq{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .seq .cell:nth-child(6n){border-right:1px solid var(--line)}
+  .seq .cell:nth-child(3n){border-right:0}
+  .seq .cell:nth-last-child(-n+6){border-bottom:1px solid var(--line)}
+  .seq .cell:nth-last-child(-n+3){border-bottom:0}
+  .state{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .state .st:nth-child(2){border-right:0}
+}
+@media (max-width:760px){
+  .spec-grid,.task-grid,.rollback{grid-template-columns:1fr}
+  .seq{grid-template-columns:1fr}
+  .seq .cell{border-right:0!important;border-bottom:1px solid var(--line)!important}
+  .seq .cell:last-child{border-bottom:0!important}
+  .state{grid-template-columns:1fr}
+  .state .st{border-right:0;border-bottom:1px solid var(--line)}
+  .state .st:last-child{border-bottom:0}
+  .rollback{grid-template-columns:1fr}
+}
+@media print{
+  .spec-grid,.task-grid,.rollback{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .seq{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  .state{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .sig{break-inside:avoid}
+  .task,.spec,.rollback .rb{break-inside:avoid}
+  .sig pre{white-space:pre-wrap;word-break:break-word}
+  .field-table,.pr-table,.code-map{min-width:0!important}
+}
+
+</style>
+<noscript><style>.reveal{opacity:1;transform:none}.reviewbar{display:none}</style></noscript>
+</head>
+<body>
+<header class="cover" id="top">
+  <div class="cover-grid">
+    <div class="cover-copy">
+      <div class="eyebrow">Implementation Design / 2026-11-16 / v1.0</div>
+      <h1>AI-KB<br><em>详细设计</em></h1>
+      <p class="lede">把架构评审里的四层结构、单一流水线、Agent-Ready 接缝，落成可编码的模块、接口、SQL、API 契约、测试用例与迁移任务。本文回答“怎么写”，不重复“为什么”。</p>
+      <div class="chips">
+        <span class="chip pine">Python 3.14</span>
+        <span class="chip">FastAPI</span>
+        <span class="chip clay">SQLite WAL</span>
+        <span class="chip">RAG</span>
+        <span class="chip">Agent-Ready</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>12</b><span>目标模块</span></div>
+        <div class="stat"><b>8</b><span>核心端口</span></div>
+        <div class="stat"><b>5</b><span>实施阶段</span></div>
+        <div class="stat"><b>100%</b><span>接口兼容</span></div>
+      </div>
+    </div>
+    <figure class="cover-visual">
+      <svg viewBox="0 0 440 440" role="img" aria-label="详细设计装配图：API 接入、AssistantService 用例、RAG/Chat/Agent、领域端口、基础设施。">
+        <text x="0" y="14" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1.5" fill="#6F7C72">ASSEMBLY / 装配图</text>
+
+        <rect x="52" y="36" width="336" height="58" fill="#F2F3EC" stroke="#96A195"></rect>
+        <text x="220" y="56" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#B24F2C">L4 · API / ACCESS</text>
+        <text x="220" y="76" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-size="13" fill="#17231E">ask · openai · sessions · pages</text>
+
+        <rect x="52" y="122" width="336" height="98" fill="#1E4D3D" stroke="#1E4D3D"></rect>
+        <text x="220" y="142" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#CFE0D6">L3 · APPLICATION</text>
+        <text x="220" y="162" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-size="14" fill="#F2F3EC">AssistantService</text>
+        <rect x="68" y="176" width="96" height="30" fill="rgba(242,243,236,.12)" stroke="#8FA88B"></rect>
+        <rect x="172" y="176" width="96" height="30" fill="rgba(242,243,236,.12)" stroke="#8FA88B"></rect>
+        <rect x="276" y="176" width="96" height="30" fill="rgba(242,243,236,.12)" stroke="#B24F2C"></rect>
+        <text x="116" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#F2F3EC">RAG PIPELINE</text>
+        <text x="220" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#F2F3EC">CHAT SERVICE</text>
+        <text x="324" y="195" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#F2F3EC">AGENT (FUTURE)</text>
+
+        <rect x="52" y="248" width="336" height="66" fill="#F2F3EC" stroke="#96A195"></rect>
+        <text x="220" y="268" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#1E4D3D">L2 · DOMAIN / PORTS</text>
+        <text x="220" y="290" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="#455249">Chunk · Evidence · Answer · Turn · TraceEvent</text>
+        <text x="220" y="305" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#6F7C72">LLM · Embedder · SearchIndex · Repository · Jobs</text>
+
+        <rect x="52" y="342" width="336" height="58" fill="#F2F3EC" stroke="#96A195"></rect>
+        <text x="220" y="362" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1" fill="#6F7C72">L1 · INFRASTRUCTURE</text>
+        <text x="220" y="382" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-size="12" fill="#17231E">LLM HTTP · Ollama · SQLite · Files · Jobs</text>
+
+        <line x1="220" y1="94" x2="220" y2="122" stroke="#455249" marker-end="url(#dar)"></line>
+        <line x1="220" y1="220" x2="220" y2="248" stroke="#455249" marker-end="url(#dar)"></line>
+        <line x1="220" y1="314" x2="220" y2="342" stroke="#455249" marker-end="url(#dar)"></line>
+        <line x1="220" y1="342" x2="220" y2="314" stroke="#B24F2C" stroke-dasharray="4 4" marker-end="url(#dar-clay)"></line>
+        <text x="228" y="330" font-family="IBM Plex Mono, monospace" font-size="7" fill="#B24F2C">IMPLEMENTS</text>
+
+        <defs>
+          <marker id="dar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#455249"></path>
+          </marker>
+          <marker id="dar-clay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#B24F2C"></path>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>FIG. 00 — 四层装配与依赖方向</figcaption>
+    </figure>
+  </div>
+  <div class="cover-strip">
+    <span>实现原则：<strong>Behavior first. Ports at boundaries. One pipeline.</strong></span>
+    <span>Snapshot 2026-11-16 · ai-kb-new</span>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="toc" aria-label="目录">
+    <div class="toc-title">Contents / 目录</div>
+    <a href="#s0"><span class="n">00</span><span>文档定位</span></a>
+    <a href="#s1"><span class="n">01</span><span>约束与兼容</span></a>
+    <a href="#s2"><span class="n">02</span><span>代码结构</span></a>
+    <a href="#s3"><span class="n">03</span><span>领域模型与端口</span></a>
+    <a href="#s4"><span class="n">04</span><span>摄入与索引</span></a>
+    <a href="#s5"><span class="n">05</span><span>检索</span></a>
+    <a href="#s6"><span class="n">06</span><span>上下文与生成</span></a>
+    <a href="#s7"><span class="n">07</span><span>会话与持久化</span></a>
+    <a href="#s8"><span class="n">08</span><span>评估与优化</span></a>
+    <a href="#s9"><span class="n">09</span><span>API 层</span></a>
+    <a href="#s10"><span class="n">10</span><span>配置与提示词</span></a>
+    <a href="#s11"><span class="n">11</span><span>可观测性</span></a>
+    <a href="#s12"><span class="n">12</span><span>安全与权限</span></a>
+    <a href="#s13"><span class="n">13</span><span>测试设计</span></a>
+    <a href="#s14"><span class="n">14</span><span>实施计划</span></a>
+    <a href="#s15"><span class="n">15</span><span>风险与回滚</span></a>
+    <a href="#s16"><span class="n">16</span><span>附录</span></a>
+    <div class="toc-meta">
+      DOC · IMPL-2026-11<br>
+      STATUS · REVIEW<br>
+      COMPANION · architecture-review.html
+    </div>
+  </aside>
+
+  <main id="main">
+
+    <!-- 00 -->
+    <section id="s0" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">00</div>
+        <div class="kicker">Positioning / 文档定位</div>
+        <h2>从架构决策到可编码的契约</h2>
+        <p class="intro">本文是实施级设计。它假设《架构重构设计方案》的决策已通过，并把这些决策展开为：模块边界、接口签名、数据模型、SQL、API 契约、测试用例、PR 拆分与回滚方案。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>文档</th><th>回答的问题</th><th>读者</th><th>本文关系</th></tr></thead>
+          <tbody>
+            <tr><td><a href="./architecture-review.html">architecture-review.html</a></td><td>为什么改、改成什么样、分几步</td><td>架构评审、技术负责人</td><td>上游决策；本文不重复论证</td></tr>
+            <tr><td><a href="./agent-framework-comparison.html">agent-framework-comparison.html</a></td><td>业界怎么做、有哪些骨架、如何取舍</td><td>架构评审、选型</td><td>提供横向参照；本文不重复对比</td></tr>
+            <tr><td><strong>detailed-design.html</strong></td><td><strong>具体怎么实现：模块、接口、SQL、API、测试、任务</strong></td><td>后端工程师、Code Reviewer</td><td><strong>本文</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>本文的完成定义</h3>
+      <div class="grid-3">
+        <div class="card pine"><h4>接口可编码</h4><p>每个模块有明确职责、依赖、输入输出；关键类与 Protocol 有签名，不需要再猜。</p></div>
+        <div class="card amber"><h4>数据可迁移</h4><p>DDL、migration、保留策略、备份与回滚齐全；旧库可平滑升级。</p></div>
+        <div class="card accent"><h4>行为可验证</h4><p>每个关键路径有测试用例与验收门禁；单轮行为逐字段兼容。</p></div>
+        <div class="card"><h4>任务可拆分</h4><p>按 PR 切片，依赖明确，每个 PR 可独立 review、发布、回滚。</p></div>
+        <div class="card"><h4>运维可执行</h4><p>三端口、配置、日志、指标、清理、备份都有明确操作。</p></div>
+        <div class="card"><h4>未来可扩展</h4><p>Agent 工具、状态、记忆、护栏、轨迹评测的接缝已定义；默认不启用。</p></div>
+      </div>
+
+      <h3>八条实现原则</h3>
+      <div class="grid-4">
+        <div class="card pine"><div class="tagline">P1</div><h4>行为优先</h4><p>P0–P3 不改输出；用快照锁住单轮与多轮。</p></div>
+        <div class="card pine"><div class="tagline">P2</div><h4>一条流水线</h4><p>单轮/多轮/Disco 共用 RagPipeline。</p></div>
+        <div class="card pine"><div class="tagline">P3</div><h4>端口在边界</h4><p>核心不 import FastAPI/httpx/sqlite3。</p></div>
+        <div class="card pine"><div class="tagline">P4</div><h4>显式契约</h4><p>dataclass + Pydantic；不传裸 dict。</p></div>
+        <div class="card pine"><div class="tagline">P5</div><h4>配置/提示词资产化</h4><p>Settings / Profile / Overrides / prompts 分离。</p></div>
+        <div class="card pine"><div class="tagline">P6</div><h4>Trace 是事件</h4><p>业务发事件，presenter 渲染 legacy steps。</p></div>
+        <div class="card pine"><div class="tagline">P7</div><h4>小步可逆</h4><p>每 PR 可发布；保留 shim 与开关。</p></div>
+        <div class="card pine"><div class="tagline">P8</div><h4>Agent 后置</h4><p>先定义接缝，不启用自主循环。</p></div>
+      </div>
+    </section>
+
+    <!-- 01 -->
+    <section id="s1" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">01</div>
+        <div class="kicker">Constraints / 约束与兼容</div>
+        <h2>先锁住不能变的东西</h2>
+        <p class="intro">重构期间，外部契约是“只加不改”。以下约束是每个 PR 的 review checklist；违反即回退。</p>
+      </div>
+
+      <h3>运行时约束</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项</th><th>约束</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>语言</td><td>Python 3.14</td><td>使用 <code class="inline">from __future__ import annotations</code>；避免 3.14 不兼容语法。</td></tr>
+            <tr><td>Web</td><td>FastAPI + uvicorn</td><td>仅在 <code class="inline">api/</code> 与 <code class="inline">bootstrap.py</code> 出现。</td></tr>
+            <tr><td>数据库</td><td>SQLite WAL</td><td><code class="inline">busy_timeout=3000</code>，单写锁；不引入 ORM。</td></tr>
+            <tr><td>Embedding</td><td>Ollama <code class="inline">nomic-embed-text</code></td><td>本地 HTTP；失败可降级 BM25。</td></tr>
+            <tr><td>LLM</td><td>Anthropic/OpenAI 兼容 HTTP</td><td>由 <code class="inline">infra/llm_http.py</code> 适配；核心只依赖 <code class="inline">LLM</code> 端口。</td></tr>
+            <tr><td>进程</td><td>每个 profile 一个进程</td><td>不引入分布式队列；后台任务用进程内 <code class="inline">JobRunner</code>。</td></tr>
+            <tr><td>部署</td><td>8000 / 8001 / 8002</td><td><code class="inline">scripts/service.sh</code> 不改；<code class="inline">server*.py</code> 保留 shim。</td></tr>
+            <tr><td>数据目录</td><td><code class="inline">var/</code></td><td>索引、DB、日志、归档统一；不写项目根。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>外部契约（必须兼容）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>契约</th><th>必须保持</th><th>允许新增</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">POST /ask</code></td><td>路径、请求字段、<code class="inline">question</code>/<code class="inline">answer</code>/<code class="inline">sources</code>/<code class="inline">steps</code></td><td><code class="inline">meta</code>、<code class="inline">intent</code>、<code class="inline">citations</code>（已有则保持）</td></tr>
+            <tr><td><code class="inline">POST /ask_smart</code></td><td>多轮字段：<code class="inline">session_id</code>、<code class="inline">resolved_query</code>、<code class="inline">memory</code>、<code class="inline">citations</code>、<code class="inline">followups</code></td><td><code class="inline">meta.mode</code>、<code class="inline">meta.trace_id</code></td></tr>
+            <tr><td><code class="inline">POST /ask_eval</code></td><td><code class="inline">evaluation</code> 结构</td><td><code class="inline">meta</code></td></tr>
+            <tr><td><code class="inline">POST /ask_smart_disco</code></td><td><code class="inline">disco</code> 字段与 <code class="inline">steps</code></td><td><code class="inline">meta</code></td></tr>
+            <tr><td><code class="inline">POST /v1/chat/completions</code></td><td>OpenAI 风格 <code class="inline">choices</code> + 扩展 <code class="inline">steps</code>/<code class="inline">session_id</code>/<code class="inline">ai_kb</code></td><td>额外 <code class="inline">meta</code></td></tr>
+            <tr><td><code class="inline">/api/sessions/*</code></td><td>路径、方法、字段、导出 Markdown</td><td>统计字段</td></tr>
+            <tr><td><code class="inline">/api/eval/*</code>、<code class="inline">/api/visits</code>、<code class="inline">/api/track</code></td><td>字段与分页</td><td>聚合指标</td></tr>
+            <tr><td>页面</td><td><code class="inline">/chat</code>、<code class="inline">/single</code>、<code class="inline">/eval</code>、<code class="inline">/analysis</code></td><td>静态资源路径</td></tr>
+            <tr><td><code class="inline">steps</code></td><td><code class="inline">key/title/status/icon/summary/detail/items/ms/ops/io</code></td><td>新增 <code class="inline">attributes</code>（可选）</td></tr>
+            <tr><td>错误</td><td><code class="inline">HTTPException.detail</code> 结构</td><td><code class="inline">code</code>/<code class="inline">retryable</code>/<code class="inline">request_id</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>行为不变量</h3>
+      <ul class="small-list">
+        <li><code class="inline">session_id=None</code> 且 <code class="inline">stateless=false</code> 时，仍按现行为决定是否建会话；<code class="inline">stateless=true</code> 强制单轮。</li>
+        <li>单轮请求不写会话、不改写、不注入历史；输出与旧路径逐字段一致。</li>
+        <li>多轮历史不得作为证据；只有当前轮 <code class="inline">[E1..En]</code> 可被引用。</li>
+        <li>引用校验失败只记 flag，不抛异常、不替换答案。</li>
+        <li>索引构建中，旧快照继续服务；无快照才返回 <code class="inline">index_not_ready</code>。</li>
+        <li>评估/埋点失败不影响主响应。</li>
+        <li>所有时间戳使用本地时区 <code class="inline">%Y-%m-%dT%H:%M:%S</code>（保持现状）。</li>
+      </ul>
+
+      <h3>非目标</h3>
+      <div class="grid-3">
+        <div class="card"><h4>不做微服务</h4><p>单进程 + SQLite；不为分布式提前付出复杂度。</p></div>
+        <div class="card"><h4>不做多租户</h4><p>当前是本地/单团队服务；权限模型后续再加。</p></div>
+        <div class="card"><h4>不启用 Agent</h4><p>只定义接缝；<code class="inline">AGENT_MODE_ENABLED=0</code>。</p></div>
+        <div class="card"><h4>不重写前端框架</h4><p>HTML 出 Python，模板 + 静态资源即可。</p></div>
+        <div class="card"><h4>不改接口语义</h4><p>只加字段；不删字段、不改类型。</p></div>
+        <div class="card"><h4>不引入 ORM/队列</h4><p>repository + 线程 JobRunner 足够。</p></div>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">02</div>
+        <div class="kicker">Code layout / 代码结构</div>
+        <h2>每个文件只回答一个问题</h2>
+        <p class="intro">目录是边界的外化。以下结构是实施目标；旧文件在迁移期保留 shim，P5 后删除。</p>
+      </div>
+
+      <div class="tree"><b>ai-kb-agent/</b>
+├── <b>bootstrap.py</b>                 <i># create_app(profile)：唯一组合根</i>
+├── <b>config/</b>
+│   ├── settings.py                  <i># env → frozen Settings</i>
+│   ├── profiles.py                  <i># prod / experiment / test</i>
+│   └── overrides.py                 <i># 运行期参数 + prompt_rule（缓存/审计/回滚）</i>
+├── <b>domain/</b>
+│   ├── models.py                    <i># Chunk / Evidence / Answer / Turn / TraceEvent</i>
+│   ├── ports.py                     <i># LLM / Embedder / SearchIndex / Repository / Jobs</i>
+│   └── errors.py                    <i># IndexNotReady / ModelUnavailable / ...</i>
+├── <b>ingestion/</b>
+│   ├── vault.py                     <i># 遍历、排除规则</i>
+│   ├── frontmatter.py               <i># YAML frontmatter</i>
+│   ├── chunking.py                  <i># summary + detail chunks</i>
+│   └── index_service.py             <i># build / load / persist / rebuild / snapshot</i>
+├── <b>retrieval/</b>
+│   ├── bm25.py                      <i># tokenize + BM25Index</i>
+│   ├── vector.py                    <i># 余弦相似度</i>
+│   ├── fusion.py                    <i># 三路加权 + 会话加权</i>
+│   ├── expansion.py                 <i># 父子捆绑</i>
+│   └── service.py                   <i># retrieve() 用例</i>
+├── <b>qa/</b>
+│   ├── prompts/
+│   │   ├── answer.md
+│   │   ├── rewrite.md
+│   │   ├── disco.md
+│   │   └── summarize.md
+│   ├── rewrite.py                   <i># 规则门控 + LLM JSON</i>
+│   ├── context.py                   <i># token 预算 + 消息布局</i>
+│   ├── citation.py                  <i># [E?] 校验</i>
+│   ├── disco.py                     <i># 可选篇章分析</i>
+│   ├── pipeline.py                  <i># ★ 唯一 RAG 流水线</i>
+│   ├── multiturn.py                 <i># ★ ChatService</i>
+│   └── assistant.py                 <i># workflow / assisted / agent 门面</i>
+├── <b>conversations/</b>
+│   ├── repository.py                <i># SQLite 会话仓储</i>
+│   └── summarizer.py                <i># 滚动摘要、实体槽</i>
+├── <b>analytics/</b>
+│   ├── evaluation.py                <i># 评分适配 + 异步落库</i>
+│   ├── repository.py                <i># eval + visit 共用连接</i>
+│   └── archive.py                   <i># qa_archive</i>
+├── <b>optimization/</b>
+│   ├── trigger.py                   <i># 队列 / 巡检 / 回归 / 发布</i>
+│   ├── agent/
+│   ├── overrides.py                 <i># 受控变更</i>
+│   └── benchmark/
+├── <b>agent/</b>                        <em># 未来：默认关闭</em>
+│   ├── runtime.py                   <i># loop + budget + termination</i>
+│   ├── state.py                     <i># AgentState + checkpoint</i>
+│   ├── tools/registry.py            <i># schema + permissions + timeout</i>
+│   ├── memory/
+│   └── guardrails/
+├── <b>api/</b>
+│   ├── app.py                       <i># FastAPI 工厂 + lifespan</i>
+│   ├── deps.py                      <i># get_ctx / get_llm</i>
+│   ├── schemas.py                   <i># Pydantic DTO</i>
+│   ├── errors.py                    <i># DomainError → HTTP</i>
+│   ├── middleware/
+│   │   ├── session_cookie.py
+│   │   └── access_log.py
+│   └── routes/
+│       ├── ask.py
+│       ├── openai.py
+│       ├── sessions.py
+│       ├── admin.py
+│       ├── analytics.py
+│       └── pages.py
+├── <b>web/</b>
+│   ├── templates/{chat,single,eval,analysis}.html
+│   └── static/{app.css,chat.js,...}
+├── <b>infra/</b>
+│   ├── db.py                        <i># connection + migration runner</i>
+│   ├── migrations/
+│   │   ├── 0001_sessions.sql
+│   │   ├── 0002_analytics.sql
+│   │   └── 0003_index_meta.sql
+│   ├── llm_http.py
+│   ├── embed_ollama.py
+│   ├── index_files.py
+│   ├── trace_presenter.py
+│   └── jobs.py
+└── <b>cli/kbtool.py</b>
+
+<b>server.py</b>                         <i># 5 行 shim：create_app(prod).run()</i>
+<b>server_auto.py</b> / <b>server_v3.py</b>  <i># profile shim</i>
+<b>var/</b>                               <i># 运行时数据（不入 git）</i>
+├── db/{sessions.db,analytics.db}
+├── index/
+├── logs/
+├── qa_archive/
+└── backups/</div>
+
+      <h3>模块职责</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>模块</th><th>拥有</th><th>关键文件</th><th>依赖</th><th>不负责</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">config/</code></td><td>环境、profile、运行期覆盖</td><td>settings / profiles / overrides</td><td>stdlib + yaml</td><td>业务规则</td></tr>
+            <tr><td><code class="inline">domain/</code></td><td>模型、端口、错误</td><td>models / ports / errors</td><td>stdlib</td><td>I/O、框架</td></tr>
+            <tr><td><code class="inline">ingestion/</code></td><td>vault → chunks → index</td><td>vault / frontmatter / chunking / index_service</td><td>domain, embedder port</td><td>检索排序、生成</td></tr>
+            <tr><td><code class="inline">retrieval/</code></td><td>召回、融合、扩展</td><td>bm25 / vector / fusion / expansion / service</td><td>domain</td><td>prompt、会话、HTTP</td></tr>
+            <tr><td><code class="inline">qa/</code></td><td>改写、上下文、生成、引用</td><td>rewrite / context / citation / pipeline / multiturn</td><td>domain, retrieval</td><td>DB 细节、HTTP</td></tr>
+            <tr><td><code class="inline">conversations/</code></td><td>窗口、摘要、实体、落库</td><td>repository / summarizer</td><td>domain, infra/db</td><td>检索、生成</td></tr>
+            <tr><td><code class="inline">analytics/</code></td><td>评分、访问、归档</td><td>evaluation / repository / archive</td><td>domain, infra/db</td><td>主链路</td></tr>
+            <tr><td><code class="inline">optimization/</code></td><td>触发、队列、Agent、回归</td><td>trigger / agent / overrides</td><td>config, analytics</td><td>用户问答</td></tr>
+            <tr><td><code class="inline">api/</code></td><td>协议、DTO、中间件、错误映射</td><td>app / routes / schemas / deps</td><td>application + infra（bootstrap）</td><td>业务编排</td></tr>
+            <tr><td><code class="inline">web/</code></td><td>模板与静态资源</td><td>templates / static</td><td>无</td><td>后端逻辑</td></tr>
+            <tr><td><code class="inline">infra/</code></td><td>外部适配</td><td>llm / embed / db / index_files / jobs</td><td>domain</td><td>业务决策</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>组合根</h3>
+      <pre class="code"><code># bootstrap.py
+def create_app(profile: Profile) -&gt; FastAPI:
+    settings = Settings.from_env(profile)
+    overrides = OverridesStore(profile.overrides_path)
+    llm = HttpLLM(settings.llm)
+    embedder = OllamaEmbedder(settings.embed)
+
+    index = IndexService(
+        vault_path=settings.vault_path,
+        index_path=settings.index_path,
+        embedder=embedder,
+        batch_size=settings.ingestion.batch_size,
+    )
+    sessions = SqliteSessionRepository(settings.db.sessions)
+    analytics_repo = SqliteAnalyticsRepository(settings.db.analytics)
+    jobs = ThreadJobRunner(max_workers=settings.jobs.max_workers)
+    prompts = PromptRegistry(settings.prompt_dir)
+
+    pipeline = RagPipeline(index, embedder, llm, prompts, overrides)
+    chat = ChatService(pipeline, sessions, prompts, jobs,
+                       overrides, settings.multiturn)
+    assistant = AssistantService(pipeline, chat, settings.flags)
+    analytics = AnalyticsService(analytics_repo, llm, jobs, overrides)
+
+    ctx = AppContext(
+        profile=profile, settings=settings, overrides=overrides,
+        llm=llm, index=index, sessions=sessions,
+        pipeline=pipeline, chat=chat, assistant=assistant,
+        analytics=analytics, jobs=jobs,
+    )
+
+    app = FastAPI(title=f"AI-KB ({profile.name})", lifespan=lifespan(ctx))
+    app.state.ctx = ctx
+    register_middleware(app, ctx)
+    register_routers(app)
+    return app</code></pre>
+
+      <pre class="code"><code>@dataclass(frozen=True)
+class AppContext:
+    profile: Profile
+    settings: Settings
+    overrides: OverridesStore
+    llm: LLM
+    index: IndexService
+    sessions: SessionRepository
+    pipeline: RagPipeline
+    chat: ChatService
+    assistant: AssistantService
+    analytics: AnalyticsService
+    jobs: JobRunner</code></pre>
+
+      <div class="note">
+        <strong>唯一允许同时 import 四层的地方是 <code class="inline">bootstrap.py</code>。</strong>路由不得直接 new <code class="inline">HttpLLM</code> / <code class="inline">SqliteSessionRepository</code>；全部从 <code class="inline">app.state.ctx</code> 取。
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">03</div>
+        <div class="kicker">Domain &amp; ports / 领域模型与端口</div>
+        <h2>用类型定义边界</h2>
+        <p class="intro">领域层是纯 Python：没有 FastAPI、没有 httpx、没有 sqlite3。它定义“系统里有什么”和“外部世界能做什么”，不关心怎么做。</p>
+      </div>
+
+      <h3>枚举</h3>
+      <pre class="code"><code>class ChunkKind(str, Enum):
+    SUMMARY = "summary"
+    DETAIL = "detail"
+
+
+class Intent(str, Enum):
+    NEW_TOPIC = "new_topic"
+    FOLLOW_UP = "follow_up"
+    CORRECTION = "correction"
+    COMPARISON = "comparison"
+    CLARIFICATION = "clarification"
+    META = "meta"
+    CHITCHAT = "chitchat"
+
+
+class StepStatus(str, Enum):
+    OK = "ok"
+    EMPTY = "empty"
+    SKIP = "skip"
+    ERROR = "error"
+    DEGRADED = "degraded"
+
+
+class AnswerMode(str, Enum):
+    WORKFLOW = "workflow"
+    ASSISTED = "assisted"
+    AGENT = "agent"</code></pre>
+
+      <h3>核心模型</h3>
+      <pre class="code"><code>@dataclass(frozen=True)
+class Chunk:
+    chunk_id: str
+    doc_path: str
+    title: str
+    kind: ChunkKind
+    text: str
+    tags: tuple[str, ...] = ()
+    created: str = ""
+    metadata: Mapping[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ScoredChunk:
+    chunk: Chunk
+    score: float
+    source: Literal["bm25", "semantic", "rewrite", "fused"] = "fused"
+
+
+@dataclass(frozen=True)
+class Evidence:
+    evidence_id: str          # E1, E2, ...
+    chunk: Chunk
+    score: float
+    rank: int
+
+
+@dataclass(frozen=True)
+class Source:
+    title: str
+    path: str
+    kind: str
+
+
+@dataclass(frozen=True)
+class CitationCheck:
+    ok: bool
+    invalid: tuple[str, ...] = ()
+    missing: bool = False
+
+
+@dataclass(frozen=True)
+class MemoryStats:
+    turns_used: int = 0
+    summary_used: bool = False
+    prompt_tokens: int | None = None
+    truncated: bool = False
+
+
+@dataclass(frozen=True)
+class Turn:
+    turn_id: int
+    question: str
+    resolved_query: str
+    intent: Intent
+    answer: str
+    citations: tuple[Citation, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    created_at: str = ""
+
+
+@dataclass(frozen=True)
+class SessionState:
+    session_id: str
+    channel: int
+    title: str
+    summary: str
+    summary_upto_turn: int
+    turn_count: int
+    created_at: str
+    updated_at: str
+
+
+@dataclass(frozen=True)
+class TraceEvent:
+    trace_id: str
+    step: str
+    status: StepStatus
+    started_at: float
+    duration_ms: int
+    input_summary: str = ""
+    output_summary: str = ""
+    attributes: Mapping[str, object] = field(default_factory=dict)
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class Answer:
+    text: str
+    sources: tuple[Source, ...]
+    evidence: tuple[Evidence, ...]
+    citations: CitationCheck
+    followups: tuple[str, ...] = ()
+    trace: tuple[TraceEvent, ...] = ()
+    memory: MemoryStats = field(default_factory=MemoryStats)</code></pre>
+
+      <h3>请求选项</h3>
+      <pre class="code"><code>@dataclass(frozen=True)
+class AnswerOptions:
+    rewrite: bool = True
+    raw_question: str | None = None
+    entities: tuple[str, ...] = ()
+    doc_boost: Mapping[str, float] = field(default_factory=dict)
+    repeat_ids: frozenset[str] = frozenset()
+    repeat_penalty: float = 1.0
+    history: tuple[Turn, ...] = ()
+    summary: str = ""
+    disco: bool = False
+    mode: AnswerMode = AnswerMode.WORKFLOW
+    top_k: int | None = None</code></pre>
+
+      <h3>端口</h3>
+      <pre class="code"><code>class LLM(Protocol):
+    model: str
+
+    def chat(
+        self,
+        messages: Sequence[Message],
+        *,
+        system: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -&gt; str: ...
+
+
+class Embedder(Protocol):
+    def embed(self, text: str) -&gt; list[float]: ...
+    def embed_many(self, texts: Sequence[str]) -&gt; list[list[float]]: ...
+
+
+class SearchIndex(Protocol):
+    def keyword(self, query: str, k: int) -&gt; list[ScoredChunk]: ...
+    def semantic(
+        self, vector: Sequence[float], k: int, threshold: float
+    ) -&gt; list[ScoredChunk]: ...
+    def expand_parents(
+        self, hits: Sequence[ScoredChunk], limit: int
+    ) -&gt; list[Chunk]: ...
+
+
+class SessionRepository(Protocol):
+    def get(self, session_id: str) -&gt; SessionState | None: ...
+    def get_or_create(self, session_id: str, channel: int) -&gt; SessionState: ...
+    def window(self, session_id: str, turns: int) -&gt; list[Turn]: ...
+    def append_turn(self, turn: Turn) -&gt; Turn: ...
+    def update_summary(self, session_id: str, summary: str, upto: int) -&gt; None: ...
+    def recent_doc_paths(self, session_id: str, turns: int) -&gt; list[str]: ...
+    def recent_chunk_ids(self, session_id: str, turns: int) -&gt; set[str]: ...
+
+
+class AnalyticsRepository(Protocol):
+    def record_query(self, event: QueryEvent) -&gt; None: ...
+    def record_eval(self, result: EvalResult) -&gt; None: ...
+    def stats(self, days: int) -&gt; dict[str, object]: ...
+
+
+class Overrides(Protocol):
+    def param(self, name: str, default: T) -&gt; T: ...
+    def prompt_rule(self) -&gt; str: ...
+
+
+class JobRunner(Protocol):
+    def submit(self, name: str, fn: Callable[[], None]) -&gt; JobHandle: ...
+    def shutdown(self, wait: bool = True) -&gt; None: ...</code></pre>
+
+      <h3>错误</h3>
+      <pre class="code"><code>class DomainError(Exception):
+    code: str = "domain_error"
+    http_status: int = 500
+    retryable: bool = False
+
+    def __init__(self, message: str, *, detail: dict | None = None):
+        super().__init__(message)
+        self.detail = detail or {}
+
+
+class IndexNotReady(DomainError):
+    code = "index_not_ready"
+    http_status = 503
+    retryable = True
+
+
+class ModelUnavailable(DomainError):
+    code = "model_unavailable"
+    http_status = 502
+    retryable = True
+
+
+class InvalidSession(DomainError):
+    code = "invalid_session"
+    http_status = 400
+
+
+class SessionNotFound(DomainError):
+    code = "session_not_found"
+    http_status = 404
+
+
+class ToolPermissionDenied(DomainError):   # 未来 Agent
+    code = "tool_permission_denied"
+    http_status = 403</code></pre>
+
+      <h3>边界转换</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>边界</th><th>输入类型</th><th>输出类型</th><th>规则</th></tr></thead>
+          <tbody>
+            <tr><td>HTTP → Application</td><td><code class="inline">AskIn</code> (Pydantic)</td><td><code class="inline">AnswerOptions</code></td><td>校验长度、mode、session_id；不把 Request 传进核心。</td></tr>
+            <tr><td>Application → Domain</td><td>dataclass</td><td>dataclass</td><td>禁止裸 dict；frozen；集合用 tuple/frozenset。</td></tr>
+            <tr><td>Infra → Domain</td><td>SQL row / JSON</td><td>dataclass</td><td>映射在 repository/adapter 内完成。</td></tr>
+            <tr><td>Domain → HTTP</td><td><code class="inline">Answer</code></td><td><code class="inline">AskOut</code></td><td>字段兼容；只加不改；<code class="inline">steps</code> 由 presenter 生成。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">04</div>
+        <div class="kicker">Ingestion / 摄入与索引</div>
+        <h2>索引是可替换的快照，不是全局变量</h2>
+        <p class="intro">摄入的目标是：同一份 vault 产出稳定的 chunk 集合；重建期间旧索引继续服务；构建失败不破坏当前服务。</p>
+      </div>
+
+      <h3>Vault 扫描规则</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>规则</th><th>值</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>文件</td><td><code class="inline">**/*.md</code></td><td>只处理 Markdown。</td></tr>
+            <tr><td>排除目录</td><td><code class="inline">.obsidian, .rag, .claude, .git, assets, copilot, schema, raw/archive, __pycache__, .trash, templates, _导入报告, attachments</code></td><td>与现状一致。</td></tr>
+            <tr><td>排除前缀</td><td><code class="inline">session-, article-, handoff</code></td><td>避免会话/临时文档入索引。</td></tr>
+            <tr><td>排除文件</td><td><code class="inline">opencode.json</code></td><td>非知识文档。</td></tr>
+            <tr><td>frontmatter</td><td><code class="inline">exclude: true</code></td><td>显式排除。</td></tr>
+            <tr><td>标题</td><td><code class="inline">meta.title</code> 或文件名（<code class="inline">-</code> → 空格）</td><td>保持现状。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>分块算法</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>解析</h5><p>frontmatter + body；失败时 meta={}，不丢文档。</p><div class="out">meta, body</div></div>
+        <div class="cell"><div class="n">02</div><h5>摘要块</h5><p>标题 + 标签 + 别名 + 正文前 300 字。</p><div class="out">#summary</div></div>
+        <div class="cell"><div class="n">03</div><h5>短文档</h5><p>正文 ≤ 800 字：整篇作为一个 detail 块。</p><div class="out">#detail0</div></div>
+        <div class="cell"><div class="n">04</div><h5>标题切分</h5><p>按 <code class="inline">##</code> 切段；段 ≤ 800 字直接保留。</p><div class="out">sections</div></div>
+        <div class="cell"><div class="n">05</div><h5>句子切分</h5><p>长段按 <code class="inline">。！？；.!?</code> 句子边界切，overlap 100。</p><div class="out">pieces</div></div>
+        <div class="cell"><div class="n">06</div><h5>过滤</h5><p>丢弃 &lt; 50 字的碎片；生成稳定 chunk_id。</p><div class="out">chunks</div></div>
+      </div>
+
+      <h3>Chunk 契约</h3>
+      <div class="table-wrap">
+        <table class="field-table">
+          <thead><tr><th>字段</th><th>类型</th><th>规则</th></tr></thead>
+          <tbody>
+            <tr><td>chunk_id</td><td>str</td><td><code class="inline">{doc_path}#summary</code> 或 <code class="inline">{doc_path}#detail{i}</code>；全局唯一。</td></tr>
+            <tr><td>doc_path</td><td>str</td><td>相对 vault 的 POSIX 路径。</td></tr>
+            <tr><td>title</td><td>str</td><td>frontmatter title 或文件名；用于来源展示与实体匹配。</td></tr>
+            <tr><td>kind</td><td>summary/detail</td><td>摘要块用于父子扩展；正文块用于召回。</td></tr>
+            <tr><td>text</td><td>str</td><td>已清洗；不含 frontmatter。</td></tr>
+            <tr><td>tags</td><td>tuple[str]</td><td>frontmatter tags；可为空。</td></tr>
+            <tr><td>created</td><td>str</td><td><code class="inline">date</code> 或 <code class="inline">created</code>；用于时间加权/展示。</td></tr>
+            <tr><td>metadata</td><td>Mapping[str,str]</td><td>预留：aliases、source、year 等。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>索引状态机</h3>
+      <div class="state">
+        <div class="st"><b>empty</b><span>无快照；检索返回 503。</span></div>
+        <div class="st"><b>building</b><span>构建新快照；旧快照仍可读。</span></div>
+        <div class="st"><b>ready</b><span>当前快照可服务。</span></div>
+        <div class="st bad"><b>failed</b><span>保留旧快照；记录错误。</span></div>
+      </div>
+
+      <h3>不可变快照</h3>
+      <pre class="code"><code>@dataclass(frozen=True)
+class IndexSnapshot:
+    version: str                 # sha256(chunks + meta) 的前 12 位
+    chunks: tuple[Chunk, ...]
+    embeddings: np.ndarray       # (n, dim) float32, L2 normalized
+    bm25: BM25Index
+    summary_by_doc: Mapping[str, Chunk]
+    built_at: str
+    meta: Mapping[str, object]
+
+
+class IndexService:
+    def __init__(self, vault_path: Path, index_path: Path,
+                 embedder: Embedder, batch_size: int = 16):
+        self._vault_path = vault_path
+        self._index_path = index_path
+        self._embedder = embedder
+        self._batch_size = batch_size
+        self._lock = threading.RLock()
+        self._snapshot: IndexSnapshot | None = None
+        self._status: IndexStatus = "empty"
+        self._error: str | None = None
+        self._reindex: ReindexProgress = ReindexProgress.idle()
+
+    def current(self) -&gt; IndexSnapshot:
+        with self._lock:
+            if self._snapshot is None:
+                raise IndexNotReady("索引未就绪", detail={"status": self._status})
+            return self._snapshot
+
+    def rebuild(self, background: bool = True) -&gt; None:
+        with self._lock:
+            self._status = "building"
+        runner = threading.Thread(target=self._rebuild, daemon=True)
+        if background:
+            runner.start()
+        else:
+            runner.run()
+
+    def _rebuild(self) -&gt; None:
+        try:
+            chunks, summary_by_doc = process_documents(self._vault_path)
+            matrix = self._embed_all(chunks)
+            bm25 = BM25Index.build([c.text for c in chunks])
+            snapshot = IndexSnapshot(...)
+            self._persist(snapshot)          # temp + rename
+            with self._lock:
+                self._snapshot = snapshot     # 原子换引用
+                self._status = "ready"
+        except Exception as exc:
+            with self._lock:
+                self._status = "failed"
+                self._error = str(exc)</code></pre>
+
+      <h3>索引文件</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>文件</th><th>内容</th><th>写入方式</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">var/index/chunks.json</code></td><td>Chunk 数组（序列化）</td><td>临时文件 + rename</td></tr>
+            <tr><td><code class="inline">var/index/embeddings.npy</code></td><td>float32 归一化矩阵</td><td>临时文件 + rename</td></tr>
+            <tr><td><code class="inline">var/index/summary_index.json</code></td><td><code class="inline">doc_path → chunk_id</code></td><td>临时文件 + rename</td></tr>
+            <tr><td><code class="inline">var/index/meta.json</code></td><td>schema_version / built_at / n_chunks / vault / embedding_model / chunk_size / overlap</td><td>最后写入，作为提交标记</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>重建流程</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>请求</h5><p><code class="inline">POST /reindex</code>；若 building 返回 <code class="inline">already_building</code>。</p><div class="out">202</div></div>
+        <div class="cell"><div class="n">02</div><h5>状态</h5><p>设置 building；保留当前快照。</p><div class="out">status</div></div>
+        <div class="cell"><div class="n">03</div><h5>扫描</h5><p>遍历 vault、解析、分块。</p><div class="out">chunks</div></div>
+        <div class="cell"><div class="n">04</div><h5>向量化</h5><p>16 条/批，并发 8；进度写入 reindex。</p><div class="out">matrix</div></div>
+        <div class="cell"><div class="n">05</div><h5>提交</h5><p>构建 BM25 + snapshot，持久化，切换引用。</p><div class="out">ready</div></div>
+        <div class="cell"><div class="n">06</div><h5>失败</h5><p>status=failed，旧快照继续服务；记录 error。</p><div class="out">failed</div></div>
+      </div>
+
+      <div class="note">
+        <strong>兼容：</strong><code class="inline">/reindex_partial</code> 第一版仍走全量，但接口保留 <code class="inline">paths</code> 参数；未来按 doc_path 过滤 chunk 后局部替换，不影响调用方。
+      </div>
+
+      <h3>失败与降级</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>场景</th><th>行为</th><th>对外</th></tr></thead>
+          <tbody>
+            <tr><td>vault 不存在</td><td>构建失败；旧快照保留</td><td><code class="inline">index_report.error</code></td></tr>
+            <tr><td>单文件解析失败</td><td>跳过该文件，记录 warning</td><td>无感</td></tr>
+            <tr><td>embedding 批次失败</td><td>重试 2 次；仍失败则构建失败</td><td>旧快照继续</td></tr>
+            <tr><td>chunks 与 matrix 行数不一致</td><td>拒绝加载；构建失败</td><td>旧快照继续</td></tr>
+            <tr><td>查询期 embedding 失败</td><td>降级 BM25；trace 标 degraded</td><td>正常返回</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">05</div>
+        <div class="kicker">Retrieval / 检索</div>
+        <h2>三路召回，一次融合，软加权</h2>
+        <p class="intro">检索是 AI-KB 的质量核心。详细设计保持现有权重与行为，只把状态、错误与追踪从实现里剥出来。</p>
+      </div>
+
+      <h3>检索流水线</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>受理</h5><p>规范化问题；确定 top_k、阈值、是否双路。</p><div class="out">query ctx</div></div>
+        <div class="cell"><div class="n">02</div><h5>BM25</h5><p>关键词召回 top 10；多轮时原文 + 改写双路取高分。</p><div class="out">10 hits</div></div>
+        <div class="cell"><div class="n">03</div><h5>语义</h5><p>Embedding → 归一化 → 点积 → 阈值过滤 → top 20。</p><div class="out">20 hits</div></div>
+        <div class="cell"><div class="n">04</div><h5>改写语义</h5><p>问题 &gt; 8 字且 embedding 可用时，改写后再召回 top 10。</p><div class="out">10 hits</div></div>
+        <div class="cell"><div class="n">05</div><h5>融合</h5><p>按 chunk_id 去重累加；权重 1:2:1；wiki/knowledge ×1.15。</p><div class="out">ranked</div></div>
+        <div class="cell"><div class="n">06</div><h5>软加权</h5><p>实体 ×1.15；上轮文档 ×1.1；跨轮重复 ×0.85。</p><div class="out">re-ranked</div></div>
+      </div>
+
+      <h3>BM25 细节</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项</th><th>实现</th></tr></thead>
+          <tbody>
+            <tr><td>分词</td><td><code class="inline">([一-鿿]+|[A-Za-z]+|\d{3,})</code>；中文整词 + 2/3 字 ngram；英文词；≥3 位数字。</td></tr>
+            <tr><td>参数</td><td><code class="inline">k1=1.5</code>，<code class="inline">b=0.75</code>。</td></tr>
+            <tr><td>IDF</td><td><code class="inline">log(1 + (N - df + 0.5) / (df + 0.5))</code>。</td></tr>
+            <tr><td>返回</td><td>得分 &gt; 0，按降序截断 top_k。</td></tr>
+            <tr><td>索引</td><td>随快照构建；不单独持久化（可从 chunks 重建）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>融合与加权</h3>
+      <pre class="code"><code>WEIGHTS = (1.0, 2.0, 1.0)      # BM25 : semantic : rewrite-semantic
+BOOST_PREFIXES = ("wiki/", "knowledge/")
+BOOST = 1.15
+
+def fuse(lists: list[list[ScoredChunk]]) -&gt; list[ScoredChunk]:
+    agg: dict[str, float] = {}
+    for hits, weight in zip(lists, WEIGHTS):
+        for hit in hits:
+            boost = BOOST if hit.chunk.doc_path.startswith(BOOST_PREFIXES) else 1.0
+            agg[hit.chunk.chunk_id] = agg.get(hit.chunk.chunk_id, 0.0) + hit.score * weight * boost
+    ranked = sorted(agg.items(), key=lambda kv: -kv[1])
+    return [ScoredChunk(chunk=by_id[cid], score=score, source="fused")
+            for cid, score in ranked]</code></pre>
+
+      <h3>会话软加权</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>信号</th><th>权重</th><th>作用范围</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>实体命中</td><td>×1.15</td><td>title / doc_path 精确匹配</td><td>只改排序，不删除候选。</td></tr>
+            <tr><td>上轮文档</td><td>×1.1</td><td>最近 2 轮引用文档前缀</td><td>保持话题连续性。</td></tr>
+            <tr><td>跨轮重复</td><td>×0.85</td><td>最近 3 轮已用 chunk</td><td>避免“越聊越窄”；追问且含继续词时不降权。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>父子扩展</h3>
+      <pre class="code"><code>def expand_parents(hits: Sequence[ScoredChunk], limit: int) -&gt; list[Chunk]:
+    by_doc: dict[str, list[ScoredChunk]] = {}
+    for hit in hits:
+        by_doc.setdefault(hit.chunk.doc_path, []).append(hit)
+
+    selected: list[Chunk] = []
+    seen: set[str] = set()
+    for doc_path, items in by_doc.items():
+        items.sort(key=lambda h: -h.score)
+        summary = snapshot.summary_by_doc.get(doc_path)
+        if summary and summary.chunk_id not in seen:
+            selected.append(summary)
+            seen.add(summary.chunk_id)
+        for hit in items[:2]:
+            if hit.chunk.chunk_id not in seen:
+                selected.append(hit.chunk)
+                seen.add(hit.chunk.chunk_id)
+    return selected[:limit]</code></pre>
+
+      <h3>检索配置</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>键</th><th>默认</th><th>层</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">TOP_K</code></td><td>30</td><td>Overrides</td><td>融合后保留的候选上限。</td></tr>
+            <tr><td><code class="inline">MAX_CONTEXT_CHUNKS</code></td><td>30</td><td>Overrides</td><td>进入上下文的块上限。</td></tr>
+            <tr><td><code class="inline">SIMILARITY_THRESHOLD</code></td><td>0.3</td><td>Overrides</td><td>语义召回阈值。</td></tr>
+            <tr><td><code class="inline">MAX_SOURCES</code></td><td>10</td><td>Overrides</td><td>响应 sources 上限。</td></tr>
+            <tr><td><code class="inline">REPEAT_PENALTY</code></td><td>0.85</td><td>Overrides</td><td>跨轮重复降权。</td></tr>
+            <tr><td><code class="inline">bm25_k1 / b</code></td><td>1.5 / 0.75</td><td>Settings</td><td>代码内固定；变更需重建索引。</td></tr>
+            <tr><td><code class="inline">semantic_k</code></td><td>20</td><td>Settings</td><td>语义召回条数。</td></tr>
+            <tr><td><code class="inline">rewrite_k</code></td><td>10</td><td>Settings</td><td>改写语义召回条数。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>性能预算</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>阶段</th><th>目标 p95</th><th>失败降级</th></tr></thead>
+          <tbody>
+            <tr><td>BM25</td><td>&lt; 20ms</td><td>返回空，继续其他路</td></tr>
+            <tr><td>Embedding（查询）</td><td>&lt; 300ms</td><td>跳语义路，BM25 继续</td></tr>
+            <tr><td>融合 + 扩展</td><td>&lt; 15ms</td><td>不应失败；异常记 error</td></tr>
+            <tr><td>检索总计</td><td>&lt; 1s</td><td>至少一路有结果即可生成</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">06</div>
+        <div class="kicker">Context &amp; generation / 上下文与生成</div>
+        <h2>证据只在本轮，历史只做理解</h2>
+        <p class="intro">上下文构建的目标是：在固定 token 预算内，尽可能保留“本轮证据 + 最近对话 + 话题锚点”，同时不把历史变成证据。</p>
+      </div>
+
+      <h3>单轮消息布局</h3>
+      <pre class="code"><code>system:  answer.md + overrides.prompt_rule
+user:    ## 检索到的知识库内容
+         [来源: 标题 | 类型 | 路径 | 时间]
+         正文...
+         ## 用户问题
+         question</code></pre>
+
+      <h3>多轮消息布局</h3>
+      <pre class="code"><code>system:  answer.md
+         + ## 对话摘要（可选）
+         + MULTITURN_RULES
+
+messages:
+  user:      历史问题 1
+  assistant: 历史答案 1（不含证据）
+  user:      历史问题 2
+  assistant: 历史答案 2（不含证据）
+  user:      ## 检索到的知识库内容
+             [E1] 《标题》｜类型｜路径｜时间
+             正文...
+             ## 当前问题
+             resolved_query
+             ## 用户原始输入（仅当与 resolved 不同）</code></pre>
+
+      <h3>预算算法</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>系统</h5><p>估算 system（含摘要、规则）token。</p><div class="out">sys_cost</div></div>
+        <div class="cell"><div class="n">02</div><h5>证据</h5><p>证据预算 = min(6000, 总预算 50%)；按顺序装入，超出即停。</p><div class="out">kept</div></div>
+        <div class="cell"><div class="n">03</div><h5>当前轮</h5><p>估算证据 + 当前问题 token。</p><div class="out">cur_cost</div></div>
+        <div class="cell"><div class="n">04</div><h5>历史</h5><p>从最近一轮往前装；最多 3 轮；答案裁剪 600 字。</p><div class="out">selected</div></div>
+        <div class="cell"><div class="n">05</div><h5>锚点</h5><p>预算允许时补回第 1 轮，避免中途丢话题。</p><div class="out">anchor</div></div>
+        <div class="cell"><div class="n">06</div><h5>收尾</h5><p>保证首尾 user、角色交替；计算 prompt_tokens/truncated。</p><div class="out">messages</div></div>
+      </div>
+
+      <pre class="code"><code>def build(system_prompt, summary, window, evidence, query,
+          raw_question=None, budget=None, max_turns=None) -&gt; BuiltContext:
+    budget = int(budget or settings.multiturn.max_prompt_tokens)
+    max_turns = int(max_turns or settings.multiturn.max_history_turns)
+
+    system = (system_prompt or "").strip()
+    if summary:
+        system += f"\n\n## 对话摘要\n{summary.strip()}"
+    system += "\n\n" + MULTITURN_RULES
+
+    evidence_budget = min(6000, int(budget * 0.5))
+    kept, used = [], 0
+    for chunk in evidence:
+        cost = estimate_tokens(format_evidence([chunk]))
+        if kept and used + cost &gt; evidence_budget:
+            break
+        kept.append(chunk)
+        used += cost
+
+    history = history_pairs(window, max_turns)
+    remaining = budget - estimate_tokens(system) - estimate_tokens(current_user(kept, query, raw_question))
+    selected, hcost = [], 0
+    for q, a in reversed(history):
+        cost = estimate_tokens(q) + estimate_tokens(a)
+        if selected and hcost + cost &gt; remaining:
+            break
+        selected.insert(0, (q, a))
+        hcost += cost
+
+    # 首轮锚点
+    if history and selected and history[0] not in selected:
+        q, a = history[0]
+        if hcost + estimate_tokens(q) + estimate_tokens(a) &lt;= remaining:
+            selected.insert(0, (q, a))
+
+    messages = []
+    for q, a in selected:
+        messages += [{"role": "user", "content": q},
+                     {"role": "assistant", "content": a}]
+    messages.append({"role": "user", "content": current_user(kept, query, raw_question)})
+    if messages[0]["role"] != "user":
+        messages.insert(0, {"role": "user", "content": "（会话开始）"})
+
+    return BuiltContext(
+        system=system,
+        messages=messages,
+        prompt_tokens=estimate_tokens(system) + sum(estimate_tokens(m["content"]) for m in messages),
+        truncated=len(selected) &lt; len(history) or len(kept) &lt; len(evidence),
+        evidence_ids=[c.chunk_id for c in kept],
+        evidence_text=format_evidence(kept),
+    )</code></pre>
+
+      <h3>引用校验</h3>
+      <pre class="code"><code>CITE_RE = re.compile(r"\[(E\d+)\]")
+
+def validate_citations(answer: str, evidence: Sequence[Evidence]) -&gt; CitationCheck:
+    valid = {f"E{i}" for i in range(1, len(evidence) + 1)}
+    cited = set(CITE_RE.findall(answer or ""))
+    invalid = sorted(cited - valid)
+    missing = bool(evidence) and not (cited &amp; valid) and len(answer or "") &gt; 200
+    return CitationCheck(ok=not invalid and not missing,
+                         invalid=tuple(invalid), missing=missing)</code></pre>
+
+      <h3>生成</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项</th><th>设计</th></tr></thead>
+          <tbody>
+            <tr><td>调用</td><td><code class="inline">llm.chat(messages, system=system, max_tokens=LLM_MAX_TOKENS)</code></td></tr>
+            <tr><td>默认 max_tokens</td><td>8000（<code class="inline">LLM_MAX_TOKENS</code>）</td></tr>
+            <tr><td>空上下文</td><td>不调用 LLM，返回“当前知识库中未找到相关内容。”</td></tr>
+            <tr><td>LLM 异常</td><td>抛 <code class="inline">ModelUnavailable</code>；trace 记录 error；API 502/503</td></tr>
+            <tr><td>来源</td><td>从 selected chunks 按 (title, doc_path) 去重；截断 MAX_SOURCES</td></tr>
+            <tr><td>追问建议</td><td>前 2 个来源标题 + 第一个实体；最多 3 条</td></tr>
+            <tr><td>Disco</td><td>可选：Ollama 三步分析；任一步失败降级为空串</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Prompt 资产</h3>
+      <pre class="code"><code># qa/prompts/answer.md
+---
+id: answer
+version: 3
+owner: qa
+variables: [context, question, summary, history]
+changelog:
+  - 3: 强化引用与冲突处理
+  - 2: 增加结构化优先
+---
+你是知识库智能助手。基于检索到的知识库内容回答用户问题，中文作答。
+...</code></pre>
+
+      <div class="grid-2">
+        <div class="card pine">
+          <h4>严格渲染</h4>
+          <p><code class="inline">PromptRegistry.render(id, **vars)</code>：缺失变量报错；未知变量报错；版本号随 trace 返回，保证可复现。</p>
+        </div>
+        <div class="card accent">
+          <h4>受控注入</h4>
+          <p>优化器只能追加 <code class="inline">prompt_rule</code>，不能重写基础 prompt；每次变更备份、审计、可回滚。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">07</div>
+        <div class="kicker">Conversations / 会话与持久化</div>
+        <h2>状态入库，进程无状态</h2>
+        <p class="intro">会话、消息、实体、轨迹全部落 SQLite；重启不丢、三端口不串。详细设计保留现有表结构，补 migration 与事务边界。</p>
+      </div>
+
+      <h3>DDL</h3>
+      <pre class="code"><code>-- 0001_sessions.sql
+PRAGMA journal_mode=WAL;
+PRAGMA busy_timeout=3000;
+
+CREATE TABLE IF NOT EXISTS schema_version (
+  version    INTEGER PRIMARY KEY,
+  applied_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  session_id        TEXT PRIMARY KEY,
+  channel           INTEGER NOT NULL DEFAULT 0,
+  title             TEXT DEFAULT '',
+  summary           TEXT DEFAULT '',
+  summary_upto_turn INTEGER DEFAULT 0,
+  summary_tokens    INTEGER DEFAULT 0,
+  turn_count        INTEGER DEFAULT 0,
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_updated ON sessions(updated_at);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id     TEXT NOT NULL,
+  turn_id        INTEGER NOT NULL,
+  role           TEXT NOT NULL,
+  content        TEXT NOT NULL,
+  resolved_query TEXT,
+  intent         TEXT,
+  citations_json TEXT,
+  evidence_json  TEXT,
+  created_at     TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_turn
+  ON messages(session_id, turn_id, role);
+CREATE INDEX IF NOT EXISTS idx_messages_session
+  ON messages(session_id, turn_id);
+
+CREATE TABLE IF NOT EXISTS session_entities (
+  session_id  TEXT NOT NULL,
+  entity_name TEXT NOT NULL,
+  doc_path    TEXT DEFAULT '',
+  hits        INTEGER DEFAULT 1,
+  last_turn   INTEGER NOT NULL,
+  PRIMARY KEY(session_id, entity_name)
+);
+
+CREATE TABLE IF NOT EXISTS turn_traces (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id          TEXT NOT NULL,
+  turn_id             INTEGER NOT NULL,
+  channel             INTEGER,
+  raw_query           TEXT,
+  resolved_query      TEXT,
+  intent              TEXT,
+  confidence          REAL,
+  needs_clarification INTEGER DEFAULT 0,
+  rewrite_failed      INTEGER DEFAULT 0,
+  entities_json       TEXT,
+  retrieved_json      TEXT,
+  prompt_tokens       INTEGER,
+  completion_tokens   INTEGER,
+  latency_ms          INTEGER,
+  answer_hash         TEXT,
+  flags_json          TEXT,
+  created_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_traces_session ON turn_traces(session_id, turn_id);
+CREATE INDEX IF NOT EXISTS idx_traces_ts ON turn_traces(created_at);</code></pre>
+
+      <h3>Repository 方法</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>返回</th><th>事务/说明</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">get(sid)</code></td><td><code class="inline">SessionState | None</code></td><td>校验 <code class="inline">^[A-Za-z0-9_-]{1,64}$</code></td></tr>
+            <tr><td><code class="inline">get_or_create(sid, channel)</code></td><td><code class="inline">SessionState</code></td><td>INSERT ON CONFLICT DO NOTHING</td></tr>
+            <tr><td><code class="inline">list(limit, offset, channel)</code></td><td><code class="inline">list[SessionSummary]</code></td><td>按 updated_at DESC</td></tr>
+            <tr><td><code class="inline">rename(sid, title)</code></td><td><code class="inline">bool</code></td><td>title 截断 80 字</td></tr>
+            <tr><td><code class="inline">reset(sid)</code></td><td><code class="inline">None</code></td><td>删 messages/entities/traces；保留 session 行与标题</td></tr>
+            <tr><td><code class="inline">delete(sid)</code></td><td><code class="inline">None</code></td><td>单事务删除全部</td></tr>
+            <tr><td><code class="inline">append_turn(turn)</code></td><td><code class="inline">Turn</code></td><td>更新 turn_count + 插 user/assistant 两行，同事务</td></tr>
+            <tr><td><code class="inline">window(sid, turns)</code></td><td><code class="inline">list[Turn]</code></td><td>最近 N 轮，按时间正序</td></tr>
+            <tr><td><code class="inline">recent_doc_paths(sid, turns)</code></td><td><code class="inline">list[str]</code></td><td>从 assistant.citations_json 提取</td></tr>
+            <tr><td><code class="inline">recent_chunk_ids(sid, turns)</code></td><td><code class="inline">set[str]</code></td><td>从 evidence_json 提取</td></tr>
+            <tr><td><code class="inline">update_summary(...)</code></td><td><code class="inline">None</code></td><td>单 UPDATE</td></tr>
+            <tr><td><code class="inline">entities(sid, limit)</code></td><td><code class="inline">list[str]</code></td><td>last_turn DESC, hits DESC</td></tr>
+            <tr><td><code class="inline">upsert_entities(...)</code></td><td><code class="inline">None</code></td><td>批量事务；hits+1</td></tr>
+            <tr><td><code class="inline">delete_entities(...)</code></td><td><code class="inline">None</code></td><td>纠正时删除被否定实体</td></tr>
+            <tr><td><code class="inline">prune_entities(sid, keep_turns)</code></td><td><code class="inline">None</code></td><td>淘汰超过 10 轮未提及</td></tr>
+            <tr><td><code class="inline">record_trace(sid, turn_id, payload)</code></td><td><code class="inline">None</code></td><td>单 INSERT；JSON 序列化</td></tr>
+            <tr><td><code class="inline">traces(sid, limit)</code></td><td><code class="inline">list[Trace]</code></td><td>按 turn_id DESC</td></tr>
+            <tr><td><code class="inline">export_markdown(sid)</code></td><td><code class="inline">str</code></td><td>最多 400 条消息</td></tr>
+            <tr><td><code class="inline">purge(...)</code></td><td><code class="inline">int</code></td><td>180/30/90 天；轨迹最多 2000 条</td></tr>
+            <tr><td><code class="inline">stats(channel, days)</code></td><td><code class="inline">dict</code></td><td>会话数、平均轮次、追问率、改写失败</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>事务与并发</h3>
+      <div class="grid-3">
+        <div class="card pine"><h4>连接</h4><p>每次操作新建连接，<code class="inline">sqlite3.connect(timeout=5)</code>；WAL + busy_timeout。或线程本地连接，禁止跨线程共享。</p></div>
+        <div class="card pine"><h4>写锁</h4><p>单 <code class="inline">threading.Lock</code> 包裹写事务；读不加锁。长事务禁止。</p></div>
+        <div class="card pine"><h4>原子性</h4><p><code class="inline">append_turn</code> 的计数 + 两条消息必须同事务；失败回滚，不产生半轮。</p></div>
+      </div>
+
+      <div class="note clay">
+        <strong>实现清理：</strong>现有 <code class="inline">session_store.py</code> 里 <code class="inline">get_messages</code> 重复调用 <code class="inline">_conn()</code>、<code class="inline">_TRACE_COLUMNS</code> 重复定义、模块导入即 <code class="inline">init_db()</code>。迁移时一并修复：连接只建一次、常量只定义一次、初始化移到 lifespan/migration。
+      </div>
+
+      <h3>保留策略</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>数据</th><th>保留</th><th>清理时机</th></tr></thead>
+          <tbody>
+            <tr><td>messages</td><td>180 天</td><td>启动 + 每日任务</td></tr>
+            <tr><td>turn_traces</td><td>30 天且最多 2000 条</td><td>启动 + 每日任务</td></tr>
+            <tr><td>sessions（空会话）</td><td>90 天</td><td>启动 + 每日任务</td></tr>
+            <tr><td>analytics.visit_records</td><td>90 天</td><td>每日任务</td></tr>
+            <tr><td>analytics.eval_records</td><td>365 天</td><td>每日任务</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">08</div>
+        <div class="kicker">Analytics &amp; optimization / 评估与优化</div>
+        <h2>评估是旁路，优化是受控变更</h2>
+        <p class="intro">主链路不为评估等待；评估失败不影响回答；优化器只能通过白名单改 overrides，并经过回归与回滚。</p>
+      </div>
+
+      <h3>Analytics DB</h3>
+      <pre class="code"><code>-- 0002_analytics.sql
+CREATE TABLE IF NOT EXISTS eval_records (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts             TEXT NOT NULL,
+  question       TEXT NOT NULL,
+  answer         TEXT,
+  total          REAL,
+  accuracy       REAL, relevance REAL, completeness REAL, clarity REAL, source_support REAL,
+  reason         TEXT, strengths TEXT, weaknesses TEXT, suggestion TEXT,
+  port           INTEGER, latency_ms INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_eval_ts ON eval_records(ts);
+
+CREATE TABLE IF NOT EXISTS visit_records (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts         TEXT NOT NULL,
+  kind       TEXT NOT NULL DEFAULT 'query',
+  path       TEXT, question TEXT, endpoint TEXT,
+  n_sources  INTEGER, n_steps INTEGER, latency_ms INTEGER,
+  status     TEXT, port INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_visit_ts ON visit_records(ts);
+CREATE INDEX IF NOT EXISTS idx_visit_kind ON visit_records(kind);</code></pre>
+
+      <h3>异步评估</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>回答完成</h5><p>主链路返回；不等待评分。</p><div class="out">response</div></div>
+        <div class="cell"><div class="n">02</div><h5>提交任务</h5><p><code class="inline">jobs.submit("eval", ...)</code></p><div class="out">job handle</div></div>
+        <div class="cell"><div class="n">03</div><h5>评分</h5><p><code class="inline">score_answer_multi</code>；重试 3 次；失败返回 None。</p><div class="out">EvalResult</div></div>
+        <div class="cell"><div class="n">04</div><h5>落库</h5><p><code class="inline">analytics_repo.record_eval</code></p><div class="out">row</div></div>
+        <div class="cell"><div class="n">05</div><h5>低分入队</h5><p>总分 ≤ 6：触发 <code class="inline">trigger.enqueue</code>；带去重/抑制。</p><div class="out">queue</div></div>
+        <div class="cell"><div class="n">06</div><h5>失败</h5><p>吞异常、记日志；主链路无感。</p><div class="out">log</div></div>
+      </div>
+
+      <h3>优化流程</h3>
+      <div class="seq">
+        <div class="cell"><div class="n">01</div><h5>队列</h5><p>低分事件进入 <code class="inline">pending_queue.json</code>；冷却/日限/相似聚合。</p><div class="out">entry</div></div>
+        <div class="cell"><div class="n">02</div><h5>诊断</h5><p>OptimizerAgent 读取问题、答案、评分弱点，输出受控计划。</p><div class="out">plan</div></div>
+        <div class="cell"><div class="n">03</div><h5>应用</h5><p>只允许 <code class="inline">prompt_rule</code> 与白名单参数；写 overrides.json。</p><div class="out">overrides</div></div>
+        <div class="cell"><div class="n">04</div><h5>复评</h5><p>8001 重新回答并评分；最多 2 次尝试。</p><div class="out">score</div></div>
+        <div class="cell"><div class="n">05</div><h5>回归</h5><p>benchmark + 多轮集；不降级才允许同步。</p><div class="out">gate</div></div>
+        <div class="cell"><div class="n">06</div><h5>发布/回滚</h5><p>同步到 overrides.prod.json；失败回滚快照。</p><div class="out">prod</div></div>
+      </div>
+
+      <h3>OverridesStore</h3>
+      <pre class="code"><code>class OverridesStore:
+    def __init__(self, path: Path):
+        self._path = path
+        self._lock = threading.RLock()
+        self._cache: dict = {}
+        self._mtime_ns: int = -1
+
+    def _load(self) -&gt; dict:
+        stat = self._path.stat()
+        with self._lock:
+            if stat.st_mtime_ns != self._mtime_ns:
+                self._cache = json.loads(self._path.read_text("utf-8"))
+                self._mtime_ns = stat.st_mtime_ns
+            return self._cache
+
+    def param(self, name: str, default: T) -&gt; T:
+        value = self._load().get("params", {}).get(name, default)
+        return cast(T, value)
+
+    def prompt_rule(self) -&gt; str:
+        return str(self._load().get("prompt_rule") or "").strip()</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>能力</th><th>实现</th><th>约束</th></tr></thead>
+          <tbody>
+            <tr><td>白名单</td><td><code class="inline">SIMILARITY_THRESHOLD / TOP_K / MAX_SOURCES / MAX_CONTEXT_CHUNKS</code> + <code class="inline">prompt_rule</code></td><td>其他键拒绝</td></tr>
+            <tr><td>缓存</td><td>mtime_ns + JSON 解析缓存</td><td>原子写保证不读半文件</td></tr>
+            <tr><td>审计</td><td><code class="inline">var/logs/audit.jsonl</code>：时间、来源、diff、结果</td><td>追加写</td></tr>
+            <tr><td>回滚</td><td>备份到 <code class="inline">var/backups/overrides.*.json</code></td><td>保留最近 20 份</td></tr>
+            <tr><td>同步</td><td>实验 overrides → 生产 overrides</td><td>只在回归通过后</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section id="s9" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">09</div>
+        <div class="kicker">API / 接口层</div>
+        <h2>路由是薄壳，服务是核心</h2>
+        <p class="intro">API 层只做四件事：解析 DTO、解析会话、调用用例、渲染响应。所有入口共享同一套 <code class="inline">_run</code> 逻辑。</p>
+      </div>
+
+      <h3>FastAPI 工厂与生命周期</h3>
+      <pre class="code"><code>@asynccontextmanager
+async def lifespan(ctx: AppContext):
+    ctx.sessions.migrate()
+    ctx.analytics.migrate()
+    ctx.index.load_or_rebuild()
+    ctx.sessions.purge()
+    ctx.jobs.start()
+    try:
+        yield
+    finally:
+        ctx.jobs.shutdown(wait=True)
+
+
+def create_app(profile: Profile) -&gt; FastAPI:
+    ctx = build_context(profile)
+    app = FastAPI(title=f"AI-KB ({profile.name})", lifespan=lifespan(ctx))
+    app.state.ctx = ctx
+    app.add_middleware(RequestIdMiddleware)
+    app.add_middleware(AccessLogMiddleware)
+    app.add_exception_handler(DomainError, domain_error_handler)
+    app.include_router(ask_router, prefix="/api")
+    app.include_router(openai_router)
+    app.include_router(sessions_router, prefix="/api")
+    app.include_router(analytics_router, prefix="/api")
+    app.include_router(admin_router)
+    app.include_router(pages_router)
+    return app</code></pre>
+
+      <h3>统一问答用例</h3>
+      <pre class="code"><code>def run_ask(req: AskIn, ctx: AppContext, request: Request,
+            response: Response, *, rewrite: bool, evaluate: bool) -&gt; AskOut:
+    sid = ctx.sessions.resolve(
+        explicit=req.session_id,
+        cookie=request.cookies.get(ctx.profile.cookie_name),
+        stateless=req.stateless,
+    )
+    options = AnswerOptions(
+        rewrite=rewrite,
+        mode=req.mode,
+        disco=req.disco,
+        top_k=req.top_k,
+    )
+
+    if sid:
+        result = ctx.chat.ask(req.question, sid, options)
+        ctx.sessions.bind_cookie(response, sid)
+    else:
+        result = ctx.pipeline.answer(req.question, options)
+
+    ctx.analytics.record_query(result, endpoint=req.endpoint, port=ctx.profile.port)
+    evaluation = ctx.analytics.evaluate_sync(result) if evaluate else None
+    return AskOut.from_domain(result, evaluation=evaluation, mode=req.mode)</code></pre>
+
+      <h3>路由清单</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方法</th><th>路径</th><th>路由文件</th><th>用例</th></tr></thead>
+          <tbody>
+            <tr><td>POST</td><td><code class="inline">/ask</code></td><td>ask.py</td><td>单轮，<code class="inline">rewrite=false</code></td></tr>
+            <tr><td>POST</td><td><code class="inline">/ask_smart</code></td><td>ask.py</td><td>多轮，<code class="inline">rewrite=true</code></td></tr>
+            <tr><td>POST</td><td><code class="inline">/ask_eval</code></td><td>ask.py</td><td>多轮 + 同步评估</td></tr>
+            <tr><td>POST</td><td><code class="inline">/ask_smart_disco</code></td><td>ask.py</td><td><code class="inline">AnswerOptions(disco=true)</code></td></tr>
+            <tr><td>POST</td><td><code class="inline">/v1/chat/completions</code></td><td>openai.py</td><td>OpenAI 兼容</td></tr>
+            <tr><td>GET/POST/DELETE/PATCH</td><td><code class="inline">/api/sessions/*</code></td><td>sessions.py</td><td>会话管理</td></tr>
+            <tr><td>GET/POST</td><td><code class="inline">/api/eval/*</code>、<code class="inline">/api/visits</code>、<code class="inline">/api/track</code></td><td>analytics.py</td><td>评估/访问</td></tr>
+            <tr><td>GET/POST</td><td><code class="inline">/health</code>、<code class="inline">/index_report</code>、<code class="inline">/reindex*</code></td><td>admin.py</td><td>运维</td></tr>
+            <tr><td>GET</td><td><code class="inline">/chat</code>、<code class="inline">/single</code>、<code class="inline">/eval</code>、<code class="inline">/analysis</code></td><td>pages.py</td><td>页面</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>请求 / 响应</h3>
+      <pre class="code"><code>class AskIn(BaseModel):
+    question: str = Field(min_length=1, max_length=4000)
+    top_k: int | None = Field(default=None, ge=1, le=100)
+    session_id: str | None = None
+    reset: bool = False
+    stateless: bool = False
+    mode: Literal["workflow", "assisted", "agent"] = "workflow"
+    disco: bool = False</code></pre>
+
+      <pre class="code"><code>{
+  "question": "孙悟空的师父是谁？",
+  "answer": "须菩提祖师。[E1]",
+  "sources": [{"title": "孙悟空", "path": "wiki/...", "type": "summary"}],
+  "steps": [...],
+  "session_id": "ses_abc123",
+  "resolved_query": "孙悟空的师父是谁？",
+  "intent": "follow_up",
+  "citations": {"ok": true, "invalid": [], "missing": false},
+  "followups": ["《孙悟空》的核心要点是什么？"],
+  "memory": {"turns_used": 2, "summary_used": true, "prompt_tokens": 3120},
+  "flags": {},
+  "evaluation": null,
+  "meta": {"trace_id": "tr_01J...", "mode": "workflow", "latency_ms": 1840}
+}</code></pre>
+
+      <h3>错误映射</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>异常</th><th>HTTP</th><th>detail</th><th>重试</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">IndexNotReady</code></td><td>503</td><td><code class="inline">{"error":"index_not_ready","status":"building"}</code></td><td>是</td></tr>
+            <tr><td><code class="inline">ModelUnavailable</code></td><td>502</td><td><code class="inline">{"error":"model_unavailable","request_id":"..."}</code></td><td>是</td></tr>
+            <tr><td><code class="inline">InvalidSession</code></td><td>400</td><td><code class="inline">{"error":"invalid_session"}</code></td><td>否</td></tr>
+            <tr><td><code class="inline">SessionNotFound</code></td><td>404</td><td><code class="inline">{"error":"session_not_found"}</code></td><td>否</td></tr>
+            <tr><td><code class="inline">ValidationError</code></td><td>422</td><td>FastAPI 默认结构</td><td>否</td></tr>
+            <tr><td>未捕获异常</td><td>500</td><td><code class="inline">{"error":"internal_error","request_id":"..."}</code></td><td>视情况</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>中间件</h3>
+      <div class="grid-2">
+        <div class="card pine">
+          <h4>SessionCookie</h4>
+          <p>解析顺序：显式 <code class="inline">session_id</code> &gt; 签名 cookie &gt; 新建。cookie 名 <code class="inline">kb_session_{port}</code>；<code class="inline">HttpOnly</code>、<code class="inline">SameSite=Lax</code>、TLS 下 <code class="inline">Secure</code>、180 天。</p>
+        </div>
+        <div class="card pine">
+          <h4>AccessLog</h4>
+          <p>记录 endpoint、status、latency、session_id、request_id；页面访问走 <code class="inline">/api/track</code>；失败只记日志，不影响响应。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">10</div>
+        <div class="kicker">Config &amp; prompts / 配置与提示词</div>
+        <h2>三层配置，一套优先级</h2>
+        <p class="intro">启动时确定的进 Settings，部署差异进 Profile，运行期可调进 Overrides。任何一层都不读“上一层的私有文件”。</p>
+      </div>
+
+      <h3>Settings / Profile</h3>
+      <pre class="code"><code>@dataclass(frozen=True)
+class Settings:
+    data_dir: Path
+    vault_path: Path
+    index_path: Path
+    prompt_dir: Path
+    db: DbSettings
+    llm: LLMSettings
+    embed: EmbedSettings
+    retrieval: RetrievalSettings
+    multiturn: MultiturnSettings
+    jobs: JobSettings
+
+    @classmethod
+    def from_env(cls, profile: Profile) -&gt; Settings: ...
+
+
+@dataclass(frozen=True)
+class Profile:
+    name: str
+    port: int
+    channel: int
+    data_dir: Path
+    overrides_path: Path
+    cookie_name: str
+    flags: ProfileFlags
+
+
+PROFILES = {
+    "prod": Profile(
+        name="prod", port=8000, channel=8000,
+        data_dir=BASE_DIR / "var",
+        overrides_path=BASE_DIR / "auto_optimization" / "overrides.prod.json",
+        cookie_name="kb_session_8000",
+        flags=ProfileFlags(multiturn=True, agent=False),
+    ),
+    "experiment": Profile(...),
+    "test": Profile(...),
+}</code></pre>
+
+      <h3>优先级</h3>
+      <pre class="code"><code>effective = DEFAULTS
+          &lt;- Profile
+          &lt;- Environment (Settings)
+          &lt;- Runtime Overrides (whitelist)
+          &lt;- Request Options (rewrite / disco / mode / top_k)</code></pre>
+
+      <h3>配置清单</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>键</th><th>层</th><th>默认</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">AIKB_DATA_DIR</code></td><td>Settings</td><td><code class="inline">./var</code></td><td>数据根目录。</td></tr>
+            <tr><td><code class="inline">RAG_VAULT_PATH</code></td><td>Settings</td><td><code class="inline">vault</code></td><td>知识库路径。</td></tr>
+            <tr><td><code class="inline">RAG_INDEX_PATH</code></td><td>Settings</td><td><code class="inline">var/index</code></td><td>索引路径。</td></tr>
+            <tr><td><code class="inline">RAG_PORT</code></td><td>Profile/Env</td><td>8000</td><td>端口；profile 显式覆盖。</td></tr>
+            <tr><td><code class="inline">RAG_OVERRIDES</code></td><td>Profile</td><td>按环境</td><td>prod/experiment 各自文件。</td></tr>
+            <tr><td><code class="inline">LLM_API_STYLE</code></td><td>Settings</td><td><code class="inline">anthropic</code></td><td><code class="inline">anthropic</code> / <code class="inline">openai</code>。</td></tr>
+            <tr><td><code class="inline">LLM_BASE_URL</code> / <code class="inline">LLM_API_KEY</code> / <code class="inline">LLM_MODEL</code></td><td>Settings</td><td>—</td><td>外部 LLM。</td></tr>
+            <tr><td><code class="inline">LLM_MAX_TOKENS</code></td><td>Settings</td><td>8000</td><td>生成上限。</td></tr>
+            <tr><td><code class="inline">OLLAMA_EMBED_URL</code> / <code class="inline">OLLAMA_EMBED_MODEL</code></td><td>Settings</td><td>本地</td><td>Embedding。</td></tr>
+            <tr><td><code class="inline">MULTITURN_ENABLED</code></td><td>Profile</td><td>1</td><td>总开关。</td></tr>
+            <tr><td><code class="inline">MAX_HISTORY_TURNS</code></td><td>Overrides</td><td>3</td><td>窗口轮数。</td></tr>
+            <tr><td><code class="inline">MULTITURN_MAX_PROMPT_TOKENS</code></td><td>Settings</td><td>12000</td><td>prompt 预算。</td></tr>
+            <tr><td><code class="inline">TOP_K</code> / <code class="inline">SIMILARITY_THRESHOLD</code></td><td>Overrides</td><td>30 / 0.3</td><td>检索参数。</td></tr>
+            <tr><td><code class="inline">MAX_CONTEXT_CHUNKS</code> / <code class="inline">MAX_SOURCES</code></td><td>Overrides</td><td>30 / 10</td><td>上下文/来源上限。</td></tr>
+            <tr><td><code class="inline">CHUNK_SIZE</code> / <code class="inline">CHUNK_OVERLAP</code></td><td>Settings</td><td>800 / 100</td><td>分块；变更需重建。</td></tr>
+            <tr><td><code class="inline">REPEAT_PENALTY</code></td><td>Overrides</td><td>0.85</td><td>跨轮重复降权。</td></tr>
+            <tr><td><code class="inline">SUMMARY_EVERY_TURNS</code></td><td>Overrides</td><td>6</td><td>摘要阈值。</td></tr>
+            <tr><td><code class="inline">AGENT_MODE_ENABLED</code></td><td>Profile</td><td>0</td><td>未来 Agent 总开关。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>提示词资产</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>文件</th><th>用途</th><th>变量</th><th>版本策略</th></tr></thead>
+          <tbody>
+            <tr><td><code class="inline">answer.md</code></td><td>知识库回答</td><td>context, question, summary, history</td><td>每次语义变更 +1；trace 记录。</td></tr>
+            <tr><td><code class="inline">rewrite.md</code></td><td>多轮改写 JSON</td><td>question, window, summary, entities</td><td>输出 schema 变更需回归。</td></tr>
+            <tr><td><code class="inline">disco.md</code></td><td>篇章分析</td><td>question, chunks</td><td>可选能力，默认关闭。</td></tr>
+            <tr><td><code class="inline">summarize.md</code></td><td>滚动摘要</td><td>summary, turns</td><td>长度上限 400 字。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section id="s11" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">11</div>
+        <div class="kicker">Observability / 可观测性</div>
+        <h2>业务发事件，展示层渲染</h2>
+        <p class="intro">保留现有 <code class="inline">steps</code> 契约，但把“文案与 io 结构”从检索/生成代码里移出。未来 Agent 轨迹复用同一套事件模型。</p>
+      </div>
+
+      <h3>TraceEvent</h3>
+      <pre class="code"><code>@dataclass(frozen=True)
+class TraceEvent:
+    trace_id: str
+    step: str
+    status: Literal["ok", "empty", "skip", "error", "degraded"]
+    started_at: float
+    duration_ms: int
+    input_summary: str = ""
+    output_summary: str = ""
+    attributes: Mapping[str, object] = field(default_factory=dict)
+    error: str | None = None</code></pre>
+
+      <h3>Presenter 映射</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>事件</th><th>legacy key</th><th>title</th><th>icon</th></tr></thead>
+          <tbody>
+            <tr><td>accept</td><td>accept</td><td>查询受理</td><td>✅ / ⚠️</td></tr>
+            <tr><td>resolve</td><td>resolve</td><td>上下文解析</td><td>✅ / ⏭️ / ❌</td></tr>
+            <tr><td>bm25</td><td>bm25</td><td>BM25 关键词检索</td><td>✅ / ⚠️</td></tr>
+            <tr><td>semantic</td><td>semantic</td><td>语义向量检索</td><td>✅ / ⚠️ / ❌</td></tr>
+            <tr><td>rewrite</td><td>rewrite</td><td>查询改写</td><td>✅ / ⚠️ / ⏭️</td></tr>
+            <tr><td>fuse</td><td>merge</td><td>三路融合排序</td><td>✅ / ⚠️</td></tr>
+            <tr><td>expand</td><td>expand</td><td>父子捆绑扩展</td><td>✅ / ⚠️</td></tr>
+            <tr><td>context</td><td>context</td><td>上下文构建</td><td>✅ / ⚠️</td></tr>
+            <tr><td>generate</td><td>generate</td><td>答案生成</td><td>✅ / ⚠️ / ❌</td></tr>
+            <tr><td>cite</td><td>cite</td><td>引用校验</td><td>✅ / ⚠️</td></tr>
+            <tr><td>persist</td><td>persist</td><td>会话落库</td><td>✅ / ❌</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>日志</h3>
+      <pre class="code"><code>{
+  "ts": "2026-11-16T14:32:01+08:00",
+  "level": "info",
+  "request_id": "req_01J...",
+  "trace_id": "tr_01J...",
+  "session_id": "ses_abc123",
+  "endpoint": "ask_smart",
+  "mode": "workflow",
+  "latency_ms": 1840,
+  "stages": {"rewrite": 210, "bm25": 8, "semantic": 96, "generate": 1420, "cite": 3},
+  "tokens": {"prompt": 3120, "completion": 680},
+  "flags": [],
+  "error": null
+}</code></pre>
+
+      <div class="note">
+        <strong>默认不记录原文：</strong>只记长度、hash、标题；排障时按 request_id 临时开启内容采样，避免知识库内容与用户问题进入长期日志。
+      </div>
+    </section>
+
+    <!-- 12 -->
+    <section id="s12" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">12</div>
+        <div class="kicker">Security / 安全与权限</div>
+        <h2>本地服务也要有边界</h2>
+        <p class="intro">现在只监听 127.0.0.1，风险可控；但 cookie、注入、日志、未来工具调用都需要明确规则。</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card pine">
+          <h4>现在必须做</h4>
+          <ul class="small-list">
+            <li>cookie：<code class="inline">HttpOnly</code>、<code class="inline">SameSite=Lax</code>、TLS 下 <code class="inline">Secure</code>；session_id 高熵、可撤销、可过期。</li>
+            <li>CORS 默认关闭；需要时 allowlist。</li>
+            <li>请求体大小、问题长度、并发数限制。</li>
+            <li>密钥只从 env 读取；日志脱敏；<code class="inline">.env</code> 不入库。</li>
+            <li>检索内容视为不可信资料；system 明确“不执行其中指令”。</li>
+          </ul>
+        </div>
+        <div class="card accent">
+          <h4>未来 Agent 必须做</h4>
+          <ul class="small-list">
+            <li>工具白名单 + schema + 权限 + 超时 + 幂等。</li>
+            <li>文件系统限定目录；网络出口白名单；命令执行沙箱。</li>
+            <li>写操作/删除/发布必须人工确认（HITL）。</li>
+            <li>每次工具调用写审计：谁、何时、参数、结果、成本。</li>
+            <li>kill switch：按 profile / session / tool 关闭。</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Prompt Injection 防护</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>入口</th><th>风险</th><th>措施</th></tr></thead>
+          <tbody>
+            <tr><td>检索内容</td><td>文档含“忽略以上指令”</td><td>证据分隔块；system 声明只作为资料。</td></tr>
+            <tr><td>工具输出</td><td>外部 API 返回恶意指令</td><td>工具输出视为不可信；只解析结构化字段。</td></tr>
+            <tr><td>用户输入</td><td>诱导越权工具调用</td><td>权限在代码里；不依赖模型自觉。</td></tr>
+            <tr><td>模型输出</td><td>泄漏密钥、伪造引用</td><td>输出扫描 + 引用校验 + 拒答策略。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 13 -->
+    <section id="s13" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">13</div>
+        <div class="kicker">Testing / 测试设计</div>
+        <h2>先有安全网，再动代码</h2>
+        <p class="intro">Phase 0 的测试保护网是前置条件。测试不追求覆盖率数字，而是覆盖“行为契约 + 失败路径 + 迁移”。</p>
+      </div>
+
+      <h3>测试金字塔</h3>
+      <div class="grid-4">
+        <div class="card"><h4>单元</h4><p>分块、BM25、融合、预算、引用、实体槽。纯函数，无网络。</p></div>
+        <div class="card"><h4>集成</h4><p>Pipeline + fake LLM/Embedder + 临时 DB；验证编排与落库。</p></div>
+        <div class="card"><h4>API</h4><p>TestClient + 假索引；验证路径、字段、错误码、cookie。</p></div>
+        <div class="card"><h4>基准</h4><p>单轮快照 + 多轮集合；发布门禁。</p></div>
+      </div>
+
+      <h3>Fixtures</h3>
+      <pre class="code"><code>class FakeLLM:
+    model = "fake"
+
+    def chat(self, messages, *, system=None, max_tokens=None, temperature=None):
+        if "查询改写器" in (system or ""):
+            return json.dumps({
+                "resolved_query": "孙悟空的师父是谁？",
+                "intent": "follow_up",
+                "entities": ["孙悟空"],
+                "filters": {},
+                "needs_clarification": False,
+                "clarification_question": "",
+                "confidence": 0.9,
+            })
+        return "须菩提祖师。[E1]"
+
+
+class FakeEmbedder:
+    def embed(self, text: str) -&gt; list[float]:
+        return [0.1] * 768
+
+    def embed_many(self, texts):
+        return [[0.1] * 768 for _ in texts]
+
+
+@pytest.fixture
+def temp_db(tmp_path):
+    return tmp_path / "sessions.db"
+
+
+@pytest.fixture
+def fake_index():
+    return InMemoryIndex([...])</code></pre>
+
+      <h3>关键测试用例</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>模块</th><th>用例</th><th>断言</th></tr></thead>
+          <tbody>
+            <tr><td>chunking</td><td>短文档 / 长文档 / 多标题 / frontmatter exclude</td><td>chunk 数、ID、正文边界、丢弃 &lt;50 字</td></tr>
+            <tr><td>bm25</td><td>中文、英文、数字、空查询、无命中</td><td>得分降序、top_k、0 分过滤</td></tr>
+            <tr><td>fusion</td><td>三路去重、权重 1:2:1、wiki boost</td><td>合并后得分与顺序</td></tr>
+            <tr><td>session boost</td><td>实体/上轮文档/重复 chunk</td><td>排序变化、候选不删除</td></tr>
+            <tr><td>expansion</td><td>同文档多命中</td><td>摘要 + top2；总数 ≤ limit</td></tr>
+            <tr><td>rewrite</td><td>无历史跳过、代词、LLM 失败、纠正</td><td>resolved_query / intent / failed</td></tr>
+            <tr><td>context</td><td>预算不足、历史裁剪、首轮锚点、角色交替</td><td>messages 首尾 user、truncated、证据只在当前轮</td></tr>
+            <tr><td>citation</td><td>合法、非法、缺失</td><td>ok/invalid/missing</td></tr>
+            <tr><td>session</td><td>append_turn、window、reset、delete、purge</td><td>turn_id 递增、事务完整、保留策略</td></tr>
+            <tr><td>API</td><td>5 个问答入口、sessions、eval、health</td><td>状态码、字段、cookie、steps</td></tr>
+            <tr><td>migration</td><td>旧 schema → 新 schema</td><td>数据不丢、schema_version 正确</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>门禁</h3>
+      <div class="grid-3">
+        <div class="card pine"><h4>行为</h4><p>单轮快照逐字段一致；多轮基准分下降 ≤5%；引用无效为 0。</p></div>
+        <div class="card pine"><h4>性能</h4><p>检索 p95 &lt;1s；生成 p95 &lt;8s；延迟上升 ≤50%。</p></div>
+        <div class="card pine"><h4>运行</h4><p>三端口 health 正常；页面可打开；reindex 可完成。</p></div>
+      </div>
+
+      <pre class="code"><code># 单元 / 冒烟
+.venv/bin/python -m pytest -q
+
+# 多轮评测
+.venv/bin/python scripts/eval_multiturn.py \
+  --base http://127.0.0.1:8002 --out eval_mt.json
+.venv/bin/python scripts/eval_multiturn.py \
+  --compare eval_mt_base.json eval_mt.json --max-drop 5
+
+# 三端口
+scripts/service.sh restart
+curl -s http://127.0.0.1:8000/health
+curl -s http://127.0.0.1:8001/health
+curl -s http://127.0.0.1:8002/health</code></pre>
+    </section>
+
+    <!-- 14 -->
+    <section id="s14" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">14</div>
+        <div class="kicker">Implementation / 实施计划</div>
+        <h2>五个阶段，每个阶段都能停</h2>
+        <p class="intro">按“先测试、再核心、再 API、最后数据/配置”的顺序推进。每个阶段独立 PR、独立发布、独立回滚。</p>
+      </div>
+
+      <div class="task-grid">
+        <div class="task">
+          <div class="id">P0 · 1–2 天</div>
+          <h4>保护网</h4>
+          <p>conftest、FakeLLM/Embedder、InMemoryIndex、单轮快照、API 冒烟、benchmark 基线。</p>
+          <div class="files">tests/conftest.py · tests/snapshots/ · tests/api/</div>
+        </div>
+        <div class="task">
+          <div class="id">P1 · 2 天</div>
+          <h4>领域 + 配置</h4>
+          <p>domain models/ports/errors；settings/profiles/overrides；删除 chat_service 的 <code class="inline">_srv()</code>。</p>
+          <div class="files">domain/* · config/* · qa/multiturn.py</div>
+        </div>
+        <div class="task">
+          <div class="id">P2 · 4 天</div>
+          <h4>摄入 + 检索</h4>
+          <p>vault/frontmatter/chunking/index_service；bm25/vector/fusion/expansion/service；快照与 rebuild。</p>
+          <div class="files">ingestion/* · retrieval/*</div>
+        </div>
+        <div class="task">
+          <div class="id">P3 · 4 天</div>
+          <h4>流水线 + 会话 + 评估</h4>
+          <p>RagPipeline、ChatService、trace presenter、conversations repository、analytics repository。</p>
+          <div class="files">qa/* · conversations/* · analytics/*</div>
+        </div>
+        <div class="task">
+          <div class="id">P4 · 3 天</div>
+          <h4>API + Web</h4>
+          <p>create_app、routers、middleware、schemas、errors；HTML 出 Python，模板/静态资源。</p>
+          <div class="files">api/* · web/* · bootstrap.py</div>
+        </div>
+        <div class="task">
+          <div class="id">P5 · 持续</div>
+          <h4>数据 + 治理</h4>
+          <p>var/ 数据目录、migration、optimization 包化、shim 清理、备份/保留、审计。</p>
+          <div class="files">infra/* · optimization/* · scripts/*</div>
+        </div>
+      </div>
+
+      <h3>PR 切片</h3>
+      <div class="table-wrap">
+        <table class="pr-table">
+          <thead><tr><th>PR</th><th>内容</th><th>依赖</th><th>验收</th><th>回滚</th></tr></thead>
+          <tbody>
+            <tr><td>PR-01</td><td>conftest + 快照 + 基线</td><td>—</td><td>pytest 全绿；基线记录</td><td>仅测试</td></tr>
+            <tr><td>PR-02</td><td>domain models/ports/errors</td><td>PR-01</td><td>纯单测通过；无框架 import</td><td>删除新包</td></tr>
+            <tr><td>PR-03</td><td>config settings/profiles/overrides</td><td>PR-02</td><td>三 profile 可构造；overrides 缓存</td><td>保留旧常量</td></tr>
+            <tr><td>PR-04</td><td>ingestion + index_service</td><td>PR-03</td><td>重建/加载/失败恢复；快照不变</td><td>旧 server 路径</td></tr>
+            <tr><td>PR-05</td><td>retrieval bm25/vector/fusion/expansion</td><td>PR-04</td><td>检索快照与旧实现一致</td><td>切回旧函数</td></tr>
+            <tr><td>PR-06</td><td>RagPipeline + trace presenter</td><td>PR-05</td><td>4 个问答入口兼容</td><td><code class="inline">PIPELINE_V2=0</code></td></tr>
+            <tr><td>PR-07</td><td>conversations repository + migration</td><td>PR-02</td><td>append/window/reset/purge</td><td>旧 DB 不变</td></tr>
+            <tr><td>PR-08</td><td>analytics repository + evaluation</td><td>PR-07</td><td>eval/visit 落库；异步无阻塞</td><td>保留旧 store</td></tr>
+            <tr><td>PR-09</td><td>api app factory + routers + middleware</td><td>PR-06/07/08</td><td>三端口启动；API 全绿</td><td>shim 选择旧 app</td></tr>
+            <tr><td>PR-10</td><td>web templates/static</td><td>PR-09</td><td>4 页面可用；URL 不变</td><td>旧 ui 模块</td></tr>
+            <tr><td>PR-11</td><td>optimization 包化 + overrides</td><td>PR-03</td><td>队列/回归/回滚</td><td>旧 auto_optimization</td></tr>
+            <tr><td>PR-12</td><td>shim 清理 + 文档</td><td>全部</td><td>无 sys.path；无旧 import</td><td>保留 tag</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>每个 PR 的完成定义</h3>
+      <div class="grid-4">
+        <div class="card"><h4>行为</h4><p>接口兼容；快照/基准不回归。</p></div>
+        <div class="card"><h4>测试</h4><p>新增边界有单测；关键路径有集成测试。</p></div>
+        <div class="card"><h4>可回滚</h4><p>开关或 shim 可用；回滚步骤写进 PR。</p></div>
+        <div class="card"><h4>可观测</h4><p>新增步骤有 trace；失败有错误码。</p></div>
+      </div>
+    </section>
+
+    <!-- 15 -->
+    <section id="s15" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">15</div>
+        <div class="kicker">Risks / 风险与回滚</div>
+        <h2>先写回滚，再写代码</h2>
+        <p class="intro">重构最大的风险是“行为悄悄变了”。每个阶段都必须能在半小时内回到上一版。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>风险</th><th>概率</th><th>影响</th><th>缓解</th></tr></thead>
+          <tbody>
+            <tr><td>单轮输出漂移</td><td>高</td><td>高</td><td>P0 快照；逐字段对比；<code class="inline">PIPELINE_V2=0</code></td></tr>
+            <tr><td>多轮引用错乱</td><td>中</td><td>高</td><td>引用校验测试；历史不带证据；基准门禁</td></tr>
+            <tr><td>索引切换竞态</td><td>中</td><td>高</td><td>不可变快照 + 原子换引用；旧快照兜底</td></tr>
+            <tr><td>SQLite 并发锁</td><td>中</td><td>中</td><td>WAL + busy_timeout + 单写锁；短事务</td></tr>
+            <tr><td>migration 丢数据</td><td>低</td><td>高</td><td>迁移前备份；dry-run；只前进 + 备份恢复</td></tr>
+            <tr><td>提示词回归</td><td>中</td><td>高</td><td>版本入 trace；基准门禁；优化器只追加规则</td></tr>
+            <tr><td>迁移疲劳</td><td>中</td><td>中</td><td>每阶段独立价值；P0/P1 先落地</td></tr>
+            <tr><td>性能回退</td><td>中</td><td>中</td><td>基准对比；事件按需构造；避免每请求读盘</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>回滚矩阵</h3>
+      <div class="rollback">
+        <div class="rb"><h4>P1 失败</h4><p>revert PR；<code class="inline">chat_service</code> 恢复 <code class="inline">_srv()</code>；无数据变更。</p></div>
+        <div class="rb"><h4>P2 失败</h4><p>server 仍保留旧函数 re-export；切回全局索引路径。</p></div>
+        <div class="rb"><h4>P3 失败</h4><p><code class="inline">PIPELINE_V2=0</code> 走旧生成路径；新表只读。</p></div>
+        <div class="rb"><h4>P4 失败</h4><p><code class="inline">server.py</code> shim 选择旧 app；页面回退旧 ui 模块。</p></div>
+        <div class="rb"><h4>P5 失败</h4><p>DB 从 <code class="inline">var/backups/</code> 恢复；overrides 回滚快照。</p></div>
+        <div class="rb"><h4>线上异常</h4><p>kill 当前进程 → 启动上一 tag；保留旧索引文件。</p></div>
+      </div>
+
+      <h3>停止条件</h3>
+      <ul class="small-list">
+        <li>单轮快照出现任何字段差异，且半天内无法定位 → 回滚，补测试。</li>
+        <li>多轮基准下降 &gt; 5% → 回滚，检查上下文/引用。</li>
+        <li>索引重建导致查询 5xx → 立即切回旧快照，暂停发布。</li>
+        <li>migration 失败 → 拒绝启动，恢复备份，不带病运行。</li>
+      </ul>
+    </section>
+
+    <!-- 16 -->
+    <section id="s16" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">16</div>
+        <div class="kicker">Appendix / 附录</div>
+        <h2>映射、清单与待确认</h2>
+        <p class="intro">用于 review 时逐项核对：旧代码去哪、配置有哪些、接口长什么样、还有哪些问题需要拍板。</p>
+      </div>
+
+      <h3>A · 旧 → 新映射</h3>
+      <div class="table-wrap">
+        <table class="code-map">
+          <thead><tr><th>现有</th><th>目标</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr><td>server.py 配置块</td><td>config/settings.py + profiles.py</td><td>抽出；去 import 副作用</td></tr>
+            <tr><td>parse_frontmatter / clean_text</td><td>ingestion/frontmatter.py</td><td>平移</td></tr>
+            <tr><td>build_page_summary / chunk_text_v2</td><td>ingestion/chunking.py</td><td>平移 + 单测</td></tr>
+            <tr><td>process_documents</td><td>ingestion/vault.py + index_service.py</td><td>拆分遍历与索引</td></tr>
+            <tr><td>tokenize / BM25Index</td><td>retrieval/bm25.py</td><td>平移</td></tr>
+            <tr><td>INDEX_STATE / load / persist / rebuild</td><td>ingestion/index_service.py + infra/index_files.py</td><td>全局 → 实例 + 快照</td></tr>
+            <tr><td>semantic_search / bm25_search</td><td>retrieval/vector.py + service.py</td><td>依赖 SearchIndex 端口</td></tr>
+            <tr><td>merge_results / apply_session_boost</td><td>retrieval/fusion.py</td><td>平移；删除死代码</td></tr>
+            <tr><td>merge_with_parent_expansion</td><td>retrieval/expansion.py</td><td>平移</td></tr>
+            <tr><td>retrieve</td><td>retrieval/service.py + qa/pipeline.py</td><td>去 HTTPException；去展示逻辑</td></tr>
+            <tr><td>build_context</td><td>qa/context.py</td><td>平移</td></tr>
+            <tr><td>answer_question / generate_answer</td><td>qa/pipeline.py</td><td>合并为流水线</td></tr>
+            <tr><td>chat_service.py</td><td>qa/multiturn.py</td><td>删除 _srv；依赖注入</td></tr>
+            <tr><td>query_rewriter.py</td><td>qa/rewrite.py</td><td>平移；提示词资产化</td></tr>
+            <tr><td>context_builder.py</td><td>qa/context.py</td><td>平移；预算参数化</td></tr>
+            <tr><td>disco.py</td><td>qa/disco.py</td><td>保留为可选能力</td></tr>
+            <tr><td>session_store.py</td><td>conversations/repository.py</td><td>加 migration；修重复连接/常量</td></tr>
+            <tr><td>eval_store.py + visit_store.py</td><td>analytics/repository.py</td><td>合并 DB 与连接管理</td></tr>
+            <tr><td>qa_store.py</td><td>analytics/archive.py</td><td>平移</td></tr>
+            <tr><td>eval_logger.py</td><td>analytics/evaluation.py</td><td>JobRunner 化</td></tr>
+            <tr><td>ui*.py</td><td>web/templates + api/routes/pages.py</td><td>HTML 出 Python</td></tr>
+            <tr><td>auto_optimization/</td><td>optimization/</td><td>包化；去 sys.path</td></tr>
+            <tr><td>5 个问答路由</td><td>api/routes/ask.py + openai.py</td><td>收敛为一个用例</td></tr>
+            <tr><td>run_server</td><td>bootstrap.py + shim</td><td>保留脚本兼容</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>B · 待确认</h3>
+      <div class="decision-map">
+        <div class="decision-row">
+          <div class="n">D1</div>
+          <div class="q">数据目录是否按 profile 隔离？</div>
+          <div class="a"><b>建议：</b>索引共享；prod/experiment 共享 DB（channel 区分），test 使用独立 <code class="inline">var/test/</code>，避免测试污染。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">D2</div>
+          <div class="q">是否保留 <code class="inline">top_k</code> 请求参数？</div>
+          <div class="a"><b>建议：</b>保留并生效（1–100），默认 None → 配置值；这是加法，不破坏旧客户端。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">D3</div>
+          <div class="q">是否现在就拆 <code class="inline">analytics.db</code>？</div>
+          <div class="a"><b>建议：</b>是。迁移时复制旧 <code class="inline">eval_records.db</code> 两张表；保留旧文件一个版本。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">D4</div>
+          <div class="q">页面用 Jinja2 还是静态 HTML？</div>
+          <div class="a"><b>建议：</b>Jinja2 只注入端口与初始配置；业务数据继续走 fetch；不引入前端构建。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">D5</div>
+          <div class="q">Agent 模块现在建目录吗？</div>
+          <div class="a"><b>建议：</b>只建空目录 + <code class="inline">README</code> + 接口占位，不实现；<code class="inline">AGENT_MODE_ENABLED=0</code>。</div>
+        </div>
+      </div>
+
+      <h3>C · 术语</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>术语</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td>Snapshot</td><td>不可变索引快照；读请求持有一份引用，重建时原子替换。</td></tr>
+            <tr><td>Port</td><td>领域定义的外部能力接口；infra 提供实现。</td></tr>
+            <tr><td>Composition Root</td><td>唯一装配依赖的地方：<code class="inline">bootstrap.create_app</code>。</td></tr>
+            <tr><td>TraceEvent</td><td>业务步骤事件；presenter 渲染为 legacy steps。</td></tr>
+            <tr><td>JobRunner</td><td>进程内后台任务；当前线程池，未来可替换队列。</td></tr>
+            <tr><td>Migration</td><td>按版本号顺序应用的 SQL 变更；只前进，回滚靠备份。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note pine">
+        <strong>下一步：</strong>评审通过后从 PR-01 开始：先建 <code class="inline">tests/conftest.py</code>、FakeLLM/FakeEmbedder、单轮快照与 API 冒烟。PR-01 不改业务代码，是整条迁移链的安全绳。
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <span>AI-KB Detailed Design · v1.0 · 2026-11-16</span>
+  <span class="end-mark">End of document</span>
+</footer>
+
+<div class="reviewbar" role="region" aria-label="阅读工具">
+  <div class="rb-progress">
+    <div class="txt">Reading · <span data-read-text>0%</span></div>
+    <div class="bar"><i data-read></i></div>
+  </div>
+  <button type="button" data-print>打印 / PDF</button>
+  <button type="button" data-top>回到顶部</button>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  function revealNow(el) { el.classList.add("in"); }
+
+  if (!reduce && "IntersectionObserver" in window) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          revealNow(entry.target);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05 });
+    reveals.forEach(function (el) { revealObserver.observe(el); });
+    setTimeout(function () { reveals.forEach(revealNow); }, 3200);
+  } else {
+    reveals.forEach(revealNow);
+  }
+  if (/[?&](static|print)=1/.test(location.search)) { reveals.forEach(revealNow); }
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute("href")); }).filter(Boolean);
+  function setActive(id) {
+    links.forEach(function (a) {
+      a.classList.toggle("active", a.getAttribute("href") === "#" + id);
+    });
+  }
+  if ("IntersectionObserver" in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { setActive(entry.target.id); }
+      });
+    }, { rootMargin: "-12% 0px -70% 0px", threshold: 0 });
+    sections.forEach(function (s) { spy.observe(s); });
+  }
+
+  function updateRead() {
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var pct = max > 0 ? Math.round((window.scrollY / max) * 100) : 0;
+    pct = Math.max(0, Math.min(100, pct));
+    document.querySelectorAll("[data-read]").forEach(function (el) { el.style.width = pct + "%"; });
+    document.querySelectorAll("[data-read-text]").forEach(function (el) { el.textContent = pct + "%"; });
+  }
+  window.addEventListener("scroll", updateRead, { passive: true });
+  window.addEventListener("resize", updateRead);
+  updateRead();
+
+  document.querySelectorAll("[data-print]").forEach(function (btn) {
+    btn.addEventListener("click", function () { window.print(); });
+  });
+  document.querySelectorAll("[data-top]").forEach(function (btn) {
+    btn.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); });
+  });
+
+  document.querySelectorAll("pre.code").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = "复制";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      var text = code ? code.innerText : pre.innerText;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "已复制";
+          setTimeout(function () { btn.textContent = "复制"; }, 1400);
+        }).catch(function () { btn.textContent = "失败"; });
+      } else {
+        btn.textContent = "不可用";
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,353 @@
+{
+  "question": "孙悟空是谁？",
+  "answer": "孙悟空的师父是须菩提祖师。[E1]",
+  "sources": [
+    {
+      "title": "孙悟空",
+      "path": "wiki/sources/孙悟空.md",
+      "type": "summary"
+    }
+  ],
+  "steps": [
+    {
+      "key": "accept",
+      "title": "查询受理",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "有效 6 字 · 改写关闭",
+      "detail": "查询：孙悟空是谁？",
+      "items": [],
+      "ms": 0,
+      "ops": [
+        "接收问题：「孙悟空是谁？」",
+        "规范化：去除首尾空白，有效长度 6 字",
+        "检索策略：BM25 Top-10 + 语义 Top-20",
+        "查询改写：关闭"
+      ],
+      "io": {}
+    },
+    {
+      "key": "bm25",
+      "title": "BM25 关键词检索",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "命中 2 条",
+      "detail": "查询：孙悟空是谁？",
+      "items": [
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "summary",
+          "chunk_id": "wiki/sources/孙悟空.md#summary",
+          "score": 2.5816,
+          "snippet": "孙悟空，师父须菩提祖师。"
+        },
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "detail",
+          "chunk_id": "wiki/sources/孙悟空.md#detail0",
+          "score": 1.5813,
+          "snippet": "须菩提祖师传授孙悟空七十二变与筋斗云。"
+        }
+      ],
+      "ms": 0,
+      "ops": [
+        "对问题分词，在 BM25 索引上计算词频 / 逆文档频率得分",
+        "输出：2 条候选"
+      ],
+      "io": {}
+    },
+    {
+      "key": "semantic",
+      "title": "语义向量检索",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "命中 2 条",
+      "detail": "",
+      "items": [
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "summary",
+          "chunk_id": "wiki/sources/孙悟空.md#summary",
+          "score": 1.0,
+          "snippet": "孙悟空，师父须菩提祖师。"
+        },
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "detail",
+          "chunk_id": "wiki/sources/孙悟空.md#detail0",
+          "score": 1.0,
+          "snippet": "须菩提祖师传授孙悟空七十二变与筋斗云。"
+        }
+      ],
+      "ms": 0,
+      "ops": [
+        "调用 embedding 接口，把问题编码为归一化向量",
+        "与索引中全部知识块向量做点积（余弦相似度）",
+        "输出：2 条候选"
+      ],
+      "io": {}
+    },
+    {
+      "key": "rewrite",
+      "title": "查询改写",
+      "status": "skip",
+      "icon": "⏭️",
+      "summary": "跳过（未启用改写）",
+      "detail": "原问题：孙悟空是谁？",
+      "items": [],
+      "ms": 0,
+      "ops": [
+        "调用 LLM 改写问题",
+        "对改写结果再次做向量检索"
+      ],
+      "io": {}
+    },
+    {
+      "key": "merge",
+      "title": "三路融合排序",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "合并去重后 2 条（BM25:语义:改写 = 1:2:1）",
+      "detail": "",
+      "items": [
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "summary",
+          "chunk_id": "wiki/sources/孙悟空.md#summary",
+          "score": 5.2689,
+          "snippet": "孙悟空，师父须菩提祖师。"
+        },
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "detail",
+          "chunk_id": "wiki/sources/孙悟空.md#detail0",
+          "score": 4.1185,
+          "snippet": "须菩提祖师传授孙悟空七十二变与筋斗云。"
+        }
+      ],
+      "ms": 0,
+      "ops": [
+        "接收三路候选：BM25 2 / 语义 2 / 改写 0",
+        "按 chunk_id 去重，同一知识块得分累加",
+        "按权重 1 : 2 : 1 加权，wiki/knowledge ×1.15",
+        "应用会话软加权后输出"
+      ],
+      "io": {}
+    },
+    {
+      "key": "expand",
+      "title": "父子捆绑扩展",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "融合 2 条 → 选取 2 个知识块（每文件 摘要 + top2 正文）",
+      "detail": "",
+      "items": [
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "summary",
+          "chunk_id": "wiki/sources/孙悟空.md#summary",
+          "score": null,
+          "snippet": "孙悟空，师父须菩提祖师。"
+        },
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "detail",
+          "chunk_id": "wiki/sources/孙悟空.md#detail0",
+          "score": null,
+          "snippet": "须菩提祖师传授孙悟空七十二变与筋斗云。"
+        }
+      ],
+      "ms": 0,
+      "ops": [
+        "输入：融合排序后的 2 条候选",
+        "按 doc_path 分组，每组补回摘要块 + 正文 Top2",
+        "输出：2 个知识块"
+      ],
+      "io": {}
+    },
+    {
+      "key": "context",
+      "title": "上下文构建",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "2 个知识块 · 143 字符",
+      "detail": "来源行格式：[来源: 标题 | 类型 | 路径 | 时间]",
+      "items": [],
+      "ms": 0,
+      "ops": [
+        "为每个知识块前置来源行",
+        "按父子扩展顺序拼接正文与空行",
+        "输出：2 块 · 143 字符上下文"
+      ],
+      "io": {
+        "input": [
+          {
+            "label": "用户问题",
+            "value": "孙悟空是谁？",
+            "meta": ""
+          },
+          {
+            "label": "输入知识块",
+            "value": "2 块 · 正文合计 31 字符",
+            "meta": "来自父子捆绑扩展"
+          },
+          {
+            "label": "#1 孙悟空",
+            "value": "孙悟空，师父须菩提祖师。",
+            "meta": "summary · wiki/sources/孙悟空.md · 12 字"
+          },
+          {
+            "label": "#2 孙悟空",
+            "value": "须菩提祖师传授孙悟空七十二变与筋斗云。",
+            "meta": "detail · wiki/sources/孙悟空.md · 19 字"
+          }
+        ],
+        "pending": [
+          {
+            "label": "待添加来源行",
+            "value": "2 条",
+            "meta": "格式：[来源: 标题 | 类型 | 路径 | 时间]"
+          },
+          {
+            "label": "待拼接正文",
+            "value": "31 字符",
+            "meta": "2 块按父子扩展顺序拼接，块间空行分隔"
+          },
+          {
+            "label": "文件分组",
+            "value": "1 个文件",
+            "meta": "wiki/sources/孙悟空.md（2 块）"
+          }
+        ],
+        "result": [
+          {
+            "label": "#1 来源行",
+            "value": "[来源: 孙悟空 | summary | wiki/sources/孙悟空.md | 2026-01-01]",
+            "meta": "已拼接正文 12 字"
+          },
+          {
+            "label": "#2 来源行",
+            "value": "[来源: 孙悟空 | detail | wiki/sources/孙悟空.md | 2026-01-01]",
+            "meta": "已拼接正文 19 字"
+          }
+        ],
+        "output": [
+          {
+            "label": "上下文全文",
+            "value": "[来源: 孙悟空 | summary | wiki/sources/孙悟空.md | 2026-01-01]\n孙悟空，师父须菩提祖师。\n\n[来源: 孙悟空 | detail | wiki/sources/孙悟空.md | 2026-01-01]\n须菩提祖师传授孙悟空七十二变与筋斗云。\n",
+            "meta": "143 字符 · 2 块 · 可直接作为 LLM 输入"
+          }
+        ]
+      }
+    },
+    {
+      "key": "generate",
+      "title": "答案生成",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "生成 17 字",
+      "detail": "模型 fake · max_tokens 8000 · prompt answer@3",
+      "items": [
+        {
+          "title": "孙悟空",
+          "path": "wiki/sources/孙悟空.md",
+          "type": "summary"
+        }
+      ],
+      "ms": 0,
+      "ops": [
+        "拼装 prompt：上下文 143 字符 + 用户问题「孙悟空是谁？」",
+        "调用模型完成答案生成",
+        "返回 17 字，耗时 0ms"
+      ],
+      "io": {
+        "input": [
+          {
+            "label": "用户问题",
+            "value": "孙悟空是谁？",
+            "meta": ""
+          },
+          {
+            "label": "检索上下文",
+            "value": "143 字符",
+            "meta": "由上下文构建产出"
+          },
+          {
+            "label": "System Prompt",
+            "value": "你是知识库智能助手。基于检索到的知识库内容回答用户问题，中文作答。\n\n## 核心原则\n- 信息密度优先：用最少的文字承载最多的有效信息，避免空话套话\n- 结构化优先：优先用分点、表格、层级组织信息\n- 全景覆盖：尽量覆盖问题的所有相关维度\n- 先总后分：先给结论/总览，再展开细节\n\n## 内容标记说明\n- 每段开头 [来源: 标题 | 类型 | 相关度 | 时间]\n- **【核心】** = 最重要的事实/数据，优先引用\n- **【条件】** = 适用范围、口径、时间限定\n- **【矛盾】** = 来源间数据冲突，必须分别陈述\n\n## 回答规则\n1. 结构化分点，每点给出具体数字/细节\n2. 标注来源：每个数据标注出处\n3. 矛盾处理：分别列出各方数据、来源时间、适用条件\n4. 优先级：新 > 旧，整理后的知识(Wiki) > 原始文档(Raw)\n5. 时间聚焦：用户问特定年份时，优先该年份来源\n6. 不编造：未覆盖或数据不完整时必须说明\"当前知识库中未找到精确数据\"\n7. 参考来源：末尾列一次且仅一次实际引用的来源\n8. 格式：返回美化的 Markdown 格式",
+            "meta": "参与本次生成的系统提示词全文"
+          },
+          {
+            "label": "模型参数",
+            "value": "model=fake · max_tokens=8000",
+            "meta": "上下文 143 字符 · 问题 6 字符"
+          }
+        ],
+        "pending": [
+          {
+            "label": "User Prompt",
+            "value": "## 检索到的知识库内容\n\n[来源: 孙悟空 | summary | wiki/sources/孙悟空.md | 2026-01-01]\n孙悟空，师父须菩提祖师。\n\n[来源: 孙悟空 | detail | wiki/sources/孙悟空.md | 2026-01-01]\n须菩提祖师传授孙悟空七十二变与筋斗云。\n\n\n## 用户问题\n孙悟空是谁？",
+            "meta": "173 字符"
+          },
+          {
+            "label": "待调用模型",
+            "value": "fake",
+            "meta": "system prompt 488 字符 · max_tokens=8000"
+          },
+          {
+            "label": "待抽取来源",
+            "value": "1 条",
+            "meta": "生成后从选中知识块按文件去重"
+          }
+        ],
+        "result": [
+          {
+            "label": "模型返回统计",
+            "value": "17 字 · 0ms",
+            "meta": "完整内容见下方「输出」"
+          },
+          {
+            "label": "来源抽取",
+            "value": "1 条",
+            "meta": "按文件去重"
+          }
+        ],
+        "output": [
+          {
+            "label": "最终答案",
+            "value": "孙悟空的师父是须菩提祖师。[E1]",
+            "meta": "17 字 · 已随响应返回"
+          },
+          {
+            "label": "参考来源",
+            "value": "1 条",
+            "meta": "已随响应 sources 字段返回"
+          }
+        ]
+      }
+    },
+    {
+      "key": "cite",
+      "title": "引用校验",
+      "status": "ok",
+      "icon": "✅",
+      "summary": "引用校验通过",
+      "detail": "",
+      "items": [],
+      "ms": 0,
+      "ops": [
+        "只允许引用本轮证据编号 [E1]..[En]",
+        "校验答案中的引用标记"
+      ],
+      "io": {}
+    }
+  ]
+}

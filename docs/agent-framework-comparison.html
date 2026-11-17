@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="LangChain、LangGraph、OpenClaw、Open Harness、Hermes Agent、Pi Agent 代码结构与架构对比。">
+<title>Agent 代码结构解剖 · 框架对比报告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8EAE3;
+  --paper-2:#F2F3EC;
+  --paper-3:#DDE1D6;
+  --ink:#17231E;
+  --ink-soft:#455249;
+  --ink-faint:#6F7C72;
+  --line:#C2C9BB;
+  --line-dark:#96A195;
+  --pine:#1E4D3D;
+  --pine-2:#2F6B54;
+  --clay:#B24F2C;
+  --amber:#D5A02A;
+  --sage:#8FA88B;
+  --mint:#CFE0D6;
+  --white:#FBFCF7;
+  --maxw:1200px;
+  --display:"Bricolage Grotesque","Avenir Next","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono","SFMono-Regular",Menlo,Consolas,"PingFang SC",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--mint);color:var(--ink)}
+a{color:var(--pine);text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--clay)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--clay);outline-offset:3px}
+.skip-link{
+  position:absolute;left:16px;top:-60px;z-index:100;
+  background:var(--ink);color:var(--paper);padding:10px 14px;
+  font-family:var(--mono);font-size:12px;text-decoration:none;
+}
+.skip-link:focus{top:16px}
+
+/* ---------- cover ---------- */
+.cover{
+  position:relative;
+  overflow:hidden;
+  border-bottom:1px solid var(--line-dark);
+  padding:clamp(28px,5vw,56px) clamp(20px,5vw,64px) 0;
+  background:
+    linear-gradient(to right, rgba(30,77,61,.045) 1px, transparent 1px) 0 0/72px 72px,
+    linear-gradient(to bottom, rgba(30,77,61,.045) 1px, transparent 1px) 0 0/72px 72px,
+    var(--paper);
+}
+.cover::after{
+  content:"00";
+  position:absolute;right:-2vw;bottom:-12vw;
+  font-family:var(--display);font-weight:700;
+  font-size:clamp(220px,32vw,520px);line-height:.75;
+  color:rgba(30,77,61,.055);
+  pointer-events:none;
+}
+.cover-grid{
+  position:relative;z-index:1;
+  max-width:var(--maxw);margin:0 auto;
+  display:grid;grid-template-columns:1.38fr .62fr;gap:clamp(24px,4vw,56px);
+  align-items:center;
+  padding-bottom:clamp(30px,4vw,56px);
+}
+.eyebrow{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-faint);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--clay)}
+h1{
+  font-family:var(--display);
+  font-size:clamp(44px,7.2vw,104px);
+  line-height:.92;letter-spacing:-.045em;font-weight:600;
+  margin:18px 0 22px;
+}
+h1 em{font-style:normal;color:var(--clay)}
+.lede{
+  max-width:60ch;color:var(--ink-soft);font-size:clamp(15px,1.5vw,18px);
+  line-height:1.7;margin:0 0 22px;
+}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:26px}
+.chip{
+  display:inline-block;font-family:var(--mono);font-size:9px;
+  letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--line-dark);padding:3px 7px;
+  white-space:nowrap;color:var(--ink-soft);background:rgba(251,252,247,.35);
+}
+.chip.pine{border-color:var(--pine);color:var(--pine)}
+.chip.clay{border-color:var(--clay);color:var(--clay)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line-dark)}
+.stat{padding:12px 12px 0 0;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:var(--display);font-size:clamp(24px,3vw,36px);line-height:1;font-weight:600}
+.stat span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--ink-faint);margin-top:6px;text-transform:uppercase}
+.cover-visual{position:relative}
+.cover-visual svg{width:100%;height:auto;display:block}
+.cover-visual figcaption{
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--ink-faint);
+  text-transform:uppercase;margin-top:8px;text-align:right;
+}
+.cover-strip{
+  position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;
+  border-top:1px solid var(--line-dark);
+  padding:12px 0 14px;
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-soft);
+  text-transform:uppercase;
+}
+.cover-strip strong{color:var(--clay);font-weight:500}
+
+/* ---------- shell / toc ---------- */
+.shell{
+  max-width:var(--maxw);margin:0 auto;
+  display:grid;grid-template-columns:210px minmax(0,1fr);
+  gap:clamp(24px,4vw,56px);
+  padding:0 clamp(20px,4vw,40px);
+}
+.toc{
+  position:sticky;top:22px;align-self:start;
+  padding:32px 0 24px;max-height:calc(100vh - 44px);overflow:auto;
+  scrollbar-width:thin;
+}
+.toc-title{
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  color:var(--ink-faint);text-transform:uppercase;
+  border-bottom:1px solid var(--line-dark);padding-bottom:8px;margin-bottom:8px;
+}
+.toc a{
+  display:flex;gap:9px;align-items:baseline;
+  padding:7px 2px;border-bottom:1px solid var(--line);
+  color:var(--ink-soft);text-decoration:none;font-size:13px;line-height:1.35;
+}
+.toc a .n{font-family:var(--mono);font-size:9px;color:var(--ink-faint);min-width:18px}
+.toc a:hover{color:var(--pine)}
+.toc a.active{color:var(--clay)}
+.toc a.active .n{color:var(--clay)}
+.toc-meta{
+  margin-top:18px;padding-top:12px;border-top:1px solid var(--line-dark);
+  font-family:var(--mono);font-size:9px;line-height:1.8;color:var(--ink-faint);
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.toc-progress{margin-top:14px}
+.toc-progress .bar{height:5px;border:1px solid var(--line-dark);background:var(--paper-2);margin-top:6px}
+.toc-progress .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.toc-progress .txt{font-family:var(--mono);font-size:9px;color:var(--ink-faint);letter-spacing:.06em}
+
+/* ---------- sections ---------- */
+main{min-width:0;padding-bottom:40px}
+section{
+  position:relative;
+  padding:clamp(46px,6vw,82px) 0;
+  border-top:1px solid var(--line-dark);
+}
+section:first-of-type{border-top:0;padding-top:46px}
+.sec-head{position:relative;margin-bottom:26px}
+.ghost-num{
+  position:absolute;right:-.02em;top:-.35em;
+  font-family:var(--display);font-weight:700;font-size:clamp(64px,10vw,140px);
+  line-height:.75;color:rgba(30,77,61,.07);pointer-events:none;user-select:none;
+}
+.kicker{
+  position:relative;z-index:1;
+  font-family:var(--mono);font-size:9px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--clay);
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+}
+.kicker::before{content:"";width:26px;height:1px;background:var(--clay)}
+h2{
+  position:relative;z-index:1;
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(28px,3.8vw,46px);line-height:1.02;
+  letter-spacing:-.025em;margin:10px 0 12px;max-width:24ch;
+}
+h3{
+  font-family:var(--display);font-weight:600;
+  font-size:clamp(20px,2.2vw,26px);line-height:1.18;
+  letter-spacing:-.015em;margin:38px 0 10px;
+}
+h4{
+  font-family:var(--body);font-weight:600;font-size:14px;
+  line-height:1.35;margin:0 0 5px;
+}
+.intro{max-width:66ch;color:var(--ink-soft);font-size:15px;margin:0 0 22px}
+p{max-width:70ch}
+.small{font-size:13.5px;color:var(--ink-soft)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--ink-faint)}
+
+/* ---------- grids / cards ---------- */
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{
+  border:1px solid var(--line-dark);
+  background:rgba(251,252,247,.45);
+  padding:16px 18px;
+  min-width:0;
+}
+.card.pine{border-top:3px solid var(--pine)}
+.card.accent{border-top:3px solid var(--clay)}
+.card.amber{border-top:3px solid var(--amber)}
+.card p{margin:0;font-size:13px;line-height:1.62;color:var(--ink-soft)}
+.card ul{margin:6px 0 0;padding-left:16px;font-size:13px;color:var(--ink-soft)}
+.card li{margin:3px 0}
+.card .tagline{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
+.metric b{display:block;font-family:var(--display);font-size:clamp(26px,3.2vw,40px);line-height:1;font-weight:600;letter-spacing:-.02em}
+.metric span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+.metric p{margin-top:8px}
+
+/* ---------- notes / quote ---------- */
+.note{
+  border-left:3px solid var(--amber);
+  background:rgba(213,160,42,.07);
+  padding:13px 16px;font-size:13px;color:var(--ink-soft);
+  margin:18px 0;
+}
+.note strong{color:var(--ink)}
+.note.pine{border-left-color:var(--pine);background:rgba(30,77,61,.05)}
+.note.clay{border-left-color:var(--clay);background:rgba(178,79,44,.06)}
+.quote{
+  border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark);
+  padding:22px 0;margin:30px 0;
+  font-family:var(--display);font-size:clamp(21px,2.9vw,32px);
+  line-height:1.25;letter-spacing:-.02em;max-width:34ch;
+}
+.quote em{font-style:normal;color:var(--clay)}
+.quote cite{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-top:10px}
+
+/* ---------- tables ---------- */
+.table-wrap{overflow-x:auto;margin:16px 0;border:1px solid var(--line-dark)}
+table{width:100%;border-collapse:collapse;min-width:620px;font-size:13px}
+th{
+  background:var(--ink);color:var(--paper);
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  text-transform:uppercase;text-align:left;font-weight:500;
+  padding:9px 12px;white-space:nowrap;
+}
+td{
+  border-bottom:1px solid var(--line);
+  padding:9px 12px;vertical-align:top;color:var(--ink-soft);
+  line-height:1.55;
+}
+tr:last-child td{border-bottom:0}
+td strong,td b{color:var(--ink)}
+td code,th code{font-family:var(--mono);font-size:11.5px;color:var(--pine)}
+.sev{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border:1px solid currentColor;white-space:nowrap}
+.sev.high{color:var(--clay)}
+.sev.mid{color:#8a6a14}
+.sev.low{color:var(--pine)}
+.num{text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}
+
+/* ---------- code ---------- */
+pre.code{
+  position:relative;overflow-x:auto;
+  background:var(--ink);color:#E7EBE2;
+  border:1px solid var(--ink);
+  padding:16px 18px;margin:16px 0;
+  font-family:var(--mono);font-size:12px;line-height:1.65;
+  tab-size:2;
+}
+pre.code code{font-family:inherit;white-space:pre}
+pre.code .c{color:#9CAF9F}
+pre.code .k{color:#E0B15A}
+pre.code .s{color:#B9D2BE}
+.copy-btn{
+  position:absolute;right:8px;top:8px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;
+  border:1px solid #5B6B5E;color:#C9D2C4;background:rgba(23,35,30,.75);
+  padding:3px 7px;text-transform:uppercase;
+}
+.copy-btn:hover{color:#fff;border-color:#9CAF9F}
+code.inline{
+  font-family:var(--mono);font-size:.9em;
+  background:rgba(30,77,61,.08);color:var(--pine);
+  padding:1px 4px;
+}
+
+/* ---------- diagrams ---------- */
+.figure{margin:20px 0;border:1px solid var(--line-dark);background:rgba(251,252,247,.35);padding:16px}
+.figure svg{width:100%;height:auto;display:block}
+.figcap{
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-faint);
+  margin-top:10px;padding-top:8px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.layer-stack{border:1px solid var(--line-dark);margin:18px 0}
+.layer{
+  display:grid;grid-template-columns:64px minmax(0,1fr);
+  border-bottom:1px solid var(--line-dark);background:rgba(251,252,247,.4);
+}
+.layer:last-child{border-bottom:0}
+.layer-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  display:flex;align-items:center;justify-content:center;
+  border-right:1px solid var(--line-dark);color:var(--ink-faint);
+  background:var(--paper-3);
+}
+.layer-body{padding:11px 14px}
+.layer-body strong{font-size:14px}
+.layer-body span{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-faint);margin-top:3px}
+.stack-arrow{
+  text-align:center;font-family:var(--mono);font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--clay);
+  padding:6px 0;border-bottom:1px solid var(--line);
+  background:rgba(178,79,44,.04);
+}
+.pipeline{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line-dark);margin:16px 0}
+.pipeline .step{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px;min-width:0;background:rgba(251,252,247,.35)}
+.pipeline .step:nth-child(5n){border-right:0}
+.pipeline .step:nth-last-child(-n+5){border-bottom:0}
+.pipeline .n{font-family:var(--mono);font-size:9px;color:var(--clay);letter-spacing:.06em}
+.pipeline h5{font-family:var(--body);font-size:12.5px;margin:3px 0 3px;font-weight:600}
+.pipeline p{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin:0}
+.pipeline .io{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--ink-faint);margin-top:6px;text-transform:uppercase}
+.flow{border:1px solid var(--line-dark);margin:16px 0}
+.flow-row{display:grid;grid-template-columns:44px minmax(0,1fr);border-bottom:1px solid var(--line)}
+.flow-row:last-child{border-bottom:0}
+.flow-n{
+  display:flex;align-items:flex-start;justify-content:center;padding-top:13px;
+  font-family:var(--mono);font-size:10px;color:var(--clay);
+  border-right:1px solid var(--line);background:rgba(178,79,44,.04);
+}
+.flow-body{padding:11px 14px}
+.flow-body strong{font-size:13.5px}
+.flow-body p{font-size:12.5px;line-height:1.55;color:var(--ink-soft);margin:2px 0 0}
+.flow-body .io{font-family:var(--mono);font-size:9px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+
+/* ---------- tree ---------- */
+.tree{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.4);
+  padding:16px 18px;margin:16px 0;overflow-x:auto;
+  font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink-soft);
+  white-space:pre;
+}
+.tree b{color:var(--pine);font-weight:500}
+.tree i{color:var(--ink-faint);font-style:normal}
+.tree em{color:var(--clay);font-style:normal}
+
+/* ---------- timeline ---------- */
+.timeline{border:1px solid var(--line-dark);margin:18px 0;background:rgba(251,252,247,.4)}
+.tl-head,.tl-row{display:grid;grid-template-columns:170px repeat(16,minmax(0,1fr));align-items:center}
+.tl-head{border-bottom:1px solid var(--line-dark);background:var(--ink);color:var(--paper)}
+.tl-head span{font-family:var(--mono);font-size:8px;letter-spacing:.06em;text-align:center;padding:7px 2px;border-right:1px solid rgba(232,234,227,.16)}
+.tl-head span:first-child{text-align:left;padding-left:12px}
+.tl-row{border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:0}
+.tl-label{font-family:var(--mono);font-size:10px;padding:7px 12px;color:var(--ink-soft)}
+.tl-track{grid-column:2 / -1;display:grid;grid-template-columns:repeat(16,minmax(0,1fr));height:24px;align-items:center;position:relative}
+.tl-track::before{content:"";position:absolute;inset:0;background:linear-gradient(to right,var(--line) 1px,transparent 1px) 0 0/calc(100%/16) 100%}
+.tl-track i{display:block;height:8px;background:var(--pine);margin:0 2px;position:relative;z-index:1}
+.tl-track i.p0{background:var(--clay)}
+.tl-track i.p1{background:var(--amber)}
+.tl-track i.p2{background:var(--sage)}
+.tl-track i.p3{background:var(--pine-2)}
+.tl-track i.p4{background:var(--pine)}
+.tl-track i.p5{background:var(--ink-soft)}
+.tl-legend{font-family:var(--mono);font-size:9px;color:var(--ink-faint);padding:8px 12px;border-top:1px solid var(--line)}
+
+/* ---------- decision / checklist ---------- */
+.decision{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.45);
+  padding:14px 16px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;
+  align-items:start;
+}
+.decision input,.check-item input{
+  appearance:none;width:15px;height:15px;border:1px solid var(--line-dark);
+  background:var(--paper-2);margin:3px 0 0;display:grid;place-content:center;cursor:pointer;
+}
+.decision input::before,.check-item input::before{
+  content:"";width:9px;height:9px;transform:scale(0);transition:transform .12s ease;
+  background:var(--pine);
+}
+.decision input:checked::before,.check-item input:checked::before{transform:scale(1)}
+.decision h4{font-size:13.5px}
+.decision p{font-size:12.5px;color:var(--ink-soft);margin:2px 0 0}
+.decision .rec{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--pine);margin-top:6px}
+.checklist{border:1px solid var(--line-dark);margin:16px 0;background:rgba(251,252,247,.35)}
+.check-group{border-bottom:1px solid var(--line-dark);padding:12px 16px}
+.check-group:last-child{border-bottom:0}
+.check-group h4{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+.check-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:5px 0;font-size:13px;color:var(--ink-soft)}
+.check-item label{cursor:pointer}
+.progress-block{margin-top:16px;border:1px solid var(--line-dark);padding:12px 14px;background:rgba(30,77,61,.04)}
+.progress-block .top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px}
+.progress-block .bar{height:8px;border:1px solid var(--line-dark);background:var(--paper-2)}
+.progress-block .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.reviewbar{
+  position:fixed;right:16px;bottom:16px;z-index:50;
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--line-dark);background:rgba(242,243,236,.96);
+  padding:7px 8px;box-shadow:0 1px 0 rgba(23,35,30,.08);
+}
+.reviewbar .rb-progress{width:110px}
+.reviewbar .rb-progress .txt{font-family:var(--mono);font-size:8px;letter-spacing:.05em;color:var(--ink-faint);text-transform:uppercase}
+.reviewbar .rb-progress .bar{height:4px;border:1px solid var(--line-dark);margin-top:3px}
+.reviewbar .rb-progress .bar i{display:block;height:100%;width:0;background:var(--pine);transition:width .25s ease}
+.reviewbar button{
+  font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--line-dark);padding:4px 7px;color:var(--ink-soft);
+}
+.reviewbar button:hover{border-color:var(--pine);color:var(--pine)}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--line-dark);margin-top:20px;
+  padding:22px clamp(20px,4vw,40px) 70px;
+  max-width:var(--maxw);margin-left:auto;margin-right:auto;
+  display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+}
+.end-mark{display:flex;align-items:center;gap:8px}
+.end-mark::before{content:"";width:22px;height:1px;background:var(--clay)}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .cover-grid{grid-template-columns:1fr}
+  .cover-visual{max-width:420px;margin:0 auto;order:-1}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat{border-bottom:1px solid var(--line);padding-bottom:10px}
+  .stat:nth-child(2n){border-right:0}
+  .shell{grid-template-columns:1fr;gap:0}
+  .toc{position:static;max-height:none;overflow:visible;padding:18px 0 0;border-bottom:1px solid var(--line-dark)}
+  .toc a{display:inline-flex;border:1px solid var(--line);margin:0 4px 4px 0;padding:4px 6px;font-size:12px}
+  .toc a .n{min-width:0}
+  .toc-meta,.toc-progress{display:none}
+  .grid-3,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pipeline .step:nth-child(5n){border-right:1px solid var(--line)}
+  .pipeline .step:nth-child(2n){border-right:0}
+  .tl-head,.tl-row{grid-template-columns:130px repeat(16,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:1fr}
+  .pipeline .step{border-right:0!important}
+  .sec-head h2{max-width:100%}
+  .ghost-num{font-size:64px;top:-.2em}
+  .reviewbar{right:10px;bottom:10px}
+  .reviewbar .rb-progress{display:none}
+  .tl-head,.tl-row{grid-template-columns:110px repeat(16,minmax(0,1fr))}
+  .tl-label{font-size:9px;padding-left:8px}
+}
+@media (max-width:460px){
+  .cover{padding-left:16px;padding-right:16px}
+  .stats{grid-template-columns:1fr}
+  .stat{border-right:0}
+  .ghost-num{display:none}
+  .figure{padding:10px}
+  .toc a{font-size:11px}
+  .reviewbar{padding:5px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  @page{size:A4;margin:12mm 10mm}
+  :root{--paper:#fff;--paper-2:#fff;--paper-3:#f2f2f2;--ink:#000;--ink-soft:#222;--ink-faint:#555;--line:#bbb;--line-dark:#888}
+  body{background:#fff;color:#000;font-size:10pt}
+  .cover{padding:0 0 18px;background:#fff!important;border-bottom:2px solid #000;page-break-after:always}
+  .cover::after,.ghost-num{display:none}
+  .cover-grid{grid-template-columns:1fr .5fr!important;gap:20px}
+  .cover-visual{order:0}
+  h1{font-size:30pt}
+  .lede{font-size:10pt}
+  .stats{grid-template-columns:repeat(4,1fr)!important}
+  .stat{border-right:1px solid var(--line)!important;border-bottom:0!important;padding-bottom:0!important}
+  .stat b{font-size:16pt}
+  .toc,.reviewbar,.copy-btn,.skip-link{display:none!important}
+  .shell{display:block;max-width:none;padding:0}
+  main{max-width:none}
+  section{padding:16px 0;border-top:1px solid #999;break-inside:auto}
+  .card,.figure,.table-wrap,.pipeline,.flow,.checklist,.timeline,.decision,.quote,.note,.check-group{break-inside:avoid}
+  .reveal{opacity:1!important;transform:none!important}
+  a{color:#000;text-decoration:underline}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .pipeline{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .pipeline .step{border-right:1px solid var(--line)!important}
+  .pipeline .step:nth-child(2n){border-right:0!important}
+  table{min-width:0!important;font-size:8pt}
+  .table-wrap{overflow:visible}
+  .tree{font-size:7.5pt;white-space:pre-wrap;word-break:break-word}
+  pre.code{font-size:8pt;white-space:pre-wrap;word-break:break-word;background:#f4f4f4;color:#000;border:1px solid #999}
+  pre.code .c{color:#555} pre.code .k{color:#7a4b00} pre.code .s{color:#225522}
+  th{background:#000;color:#fff}
+  .intro,.small,.card p,.card ul{font-size:9pt}
+  .quote{font-size:16pt}
+  footer{padding-bottom:0}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  .toc-progress .bar i,.reviewbar .rb-progress .bar i,.progress-block .bar i{transition:none}
+}
+/* ---------- comparison article additions ---------- */
+.cover h1{font-size:clamp(42px,7vw,96px)}
+h2{max-width:34ch;text-wrap:balance}
+h3{text-wrap:balance}
+.sample h3{text-wrap:balance}
+.cover-visual{max-width:460px;margin-left:auto}
+.sample-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.sample{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.45);
+  padding:16px 18px;min-width:0;
+}
+.sample.pine{border-top:3px solid var(--pine)}
+.sample.accent{border-top:3px solid var(--clay)}
+.sample.amber{border-top:3px solid var(--amber)}
+.sample .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.sample h3{margin:0;font-size:22px;letter-spacing:-.02em}
+.sample .one{margin:6px 0 8px;font-size:13px;line-height:1.6;color:var(--ink-soft)}
+.sample .meta{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);line-height:1.7}
+.sample .meta b{color:var(--pine);font-weight:500}
+.deep{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.35);
+  margin:22px 0;
+}
+.deep-head{
+  display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;
+  padding:13px 16px;border-bottom:1px solid var(--line-dark);background:rgba(221,225,214,.35);
+}
+.deep-head h3{margin:0;font-size:24px}
+.deep-head .type{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--clay)}
+.deep-grid{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr)}
+.deep-tree{
+  padding:14px 16px;border-right:1px solid var(--line);
+  font-family:var(--mono);font-size:11px;line-height:1.65;
+  white-space:pre;overflow-x:auto;color:var(--ink-soft);
+}
+.deep-tree b{color:var(--pine);font-weight:500}
+.deep-tree i{color:var(--ink-faint);font-style:normal}
+.deep-tree em{color:var(--clay);font-style:normal}
+.deep-anatomy{padding:13px 18px}
+.deep-anatomy dl{margin:0}
+.deep-anatomy dt{
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--clay);margin-top:9px;
+}
+.deep-anatomy dt:first-child{margin-top:0}
+.deep-anatomy dd{margin:2px 0 0;font-size:13px;line-height:1.58;color:var(--ink-soft)}
+.deep-anatomy dd b{color:var(--ink)}
+.insight{
+  border-top:1px solid var(--line);margin-top:11px;padding-top:8px;
+  font-size:12.5px;line-height:1.55;color:var(--pine);
+}
+.insight strong{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--clay);margin-right:4px}
+.archetype-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:16px 0}
+.archetype{
+  border:1px solid var(--line-dark);background:rgba(251,252,247,.45);
+  padding:12px;min-width:0;display:flex;flex-direction:column;
+}
+.archetype .num{font-family:var(--mono);font-size:9px;color:var(--clay);letter-spacing:.06em}
+.archetype h4{font-size:14px;margin:2px 0 4px}
+.archetype p{font-size:11.5px;line-height:1.5;margin:0;color:var(--ink-soft)}
+.archetype .mini{margin:9px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:7px 0}
+.archetype .mini svg{width:100%;height:34px;display:block}
+.archetype .who{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;color:var(--ink-faint);margin-top:auto;padding-top:6px;text-transform:uppercase}
+.matrix{min-width:860px}
+.matrix th:first-child,.matrix td:first-child{
+  position:sticky;left:0;background:var(--paper-2);z-index:2;
+  box-shadow:1px 0 0 var(--line-dark);
+}
+.matrix td{text-align:center;padding:7px 8px;vertical-align:middle}
+.matrix td:first-child{text-align:left;font-weight:600;color:var(--ink)}
+.matrix th{text-align:center;padding:7px 8px;white-space:nowrap}
+.matrix th:first-child{text-align:left}
+.r-strong,.r-mid,.r-weak{
+  display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.04em;
+  padding:2px 5px;border:1px solid currentColor;white-space:nowrap;
+}
+.r-strong{background:rgba(30,77,61,.12);color:var(--pine)}
+.r-mid{background:rgba(213,160,42,.12);color:#7a5a0a}
+.r-weak{background:rgba(178,79,44,.10);color:var(--clay)}
+.matrix-note{font-family:var(--mono);font-size:9px;line-height:1.6;color:var(--ink-faint);margin:6px 0 0;letter-spacing:.03em}
+.position-table{min-width:980px}
+.position-table td{font-size:12px;line-height:1.5}
+.position-table td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
+.position-table th:first-child{white-space:nowrap}
+.borrow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.borrow{border:1px solid var(--line-dark);background:rgba(251,252,247,.45);padding:13px 15px;min-width:0}
+.borrow.yes{border-left:3px solid var(--pine)}
+.borrow.no{border-left:3px solid var(--clay)}
+.borrow h4{font-size:13.5px;margin-bottom:3px}
+.borrow p{font-size:12px;line-height:1.55;margin:0;color:var(--ink-soft)}
+.borrow .src{font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+.decision-map{border:1px solid var(--line-dark);margin:16px 0;background:rgba(251,252,247,.35)}
+.decision-row{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1.1fr);border-bottom:1px solid var(--line)}
+.decision-row:last-child{border-bottom:0}
+.decision-row .n,.decision-row .q,.decision-row .a{padding:10px 12px}
+.decision-row .n{font-family:var(--mono);font-size:10px;color:var(--clay);border-right:1px solid var(--line);text-align:center;background:rgba(178,79,44,.04)}
+.decision-row .q{font-size:13px;color:var(--ink);border-right:1px solid var(--line)}
+.decision-row .a{font-size:12.5px;color:var(--ink-soft)}
+.decision-row .a b{color:var(--pine)}
+.tree-note{font-family:var(--mono);font-size:9px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 0}
+.source-list{list-style:none;padding:0;margin:12px 0;font-size:12.5px;line-height:1.7}
+.source-list li{border-bottom:1px solid var(--line);padding:7px 0}
+.source-list li:last-child{border-bottom:0}
+.source-list a{word-break:break-all}
+.source-list .tag{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin-right:6px}
+.tag-row{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 0}
+.cmp-kicker{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:18px 0 6px}
+.cmp-kicker::before{content:"— ";color:var(--clay)}
+@media (max-width:980px){
+  .sample-grid{grid-template-columns:1fr}
+  .deep-grid{grid-template-columns:1fr}
+  .deep-tree{border-right:0;border-bottom:1px solid var(--line);max-height:360px;overflow:auto}
+  .archetype-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .borrow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .archetype-grid,.borrow-grid{grid-template-columns:1fr}
+  .decision-row{grid-template-columns:36px minmax(0,1fr)}
+  .decision-row .a{grid-column:2;border-top:1px solid var(--line)}
+  .matrix{min-width:760px}
+}
+@media print{
+  .deep{break-inside:avoid}
+  .deep-grid{grid-template-columns:1fr 1fr!important}
+  .deep-tree{max-height:none!important;overflow:visible!important;white-space:pre-wrap;font-size:7.5pt}
+  .sample-grid,.archetype-grid,.borrow-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .cover-visual{max-width:300px}
+  .matrix,.position-table{min-width:0!important}
+  .matrix th:first-child,.matrix td:first-child{position:static;box-shadow:none}
+}
+
+</style>
+<noscript><style>.reveal{opacity:1;transform:none}.reviewbar{display:none}</style></noscript>
+</head>
+<body>
+<header class="cover" id="top">
+  <div class="cover-grid">
+    <div class="cover-copy">
+      <div class="eyebrow">Comparative Architecture / 2026-11-16 / v1.0</div>
+      <h1>Agent 代码结构<br><em>解剖</em></h1>
+      <p class="lede">LangChain、LangGraph、OpenClaw、Open Harness、Hermes Agent、Pi Agent，以及业界常见 Agent 方案。不是比功能清单，而是看：循环放在哪、状态放在哪、工具怎么注册、Prompt 怎么治理、UI 怎么隔离、未来怎么扩展。</p>
+      <div class="chips">
+        <span class="chip pine">6 个深度样本</span>
+        <span class="chip">5 种代码骨架</span>
+        <span class="chip clay">8 个对比维度</span>
+        <span class="chip">Docs-based</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>6</b><span>深度样本</span></div>
+        <div class="stat"><b>5</b><span>代码骨架</span></div>
+        <div class="stat"><b>8</b><span>对比维度</span></div>
+        <div class="stat"><b>1</b><span>AI-KB 结论</span></div>
+      </div>
+    </div>
+    <figure class="cover-visual">
+      <svg viewBox="0 0 440 440" role="img" aria-label="五种 Agent 代码骨架：Chain、Graph、Harness、Platform、Team">
+        <text x="0" y="14" font-family="IBM Plex Mono, monospace" font-size="8" letter-spacing="1.5" fill="#6F7C72">FIVE SKELETONS / 五种骨架</text>
+
+        <text x="0" y="58" font-family="IBM Plex Mono, monospace" font-size="8" fill="#B24F2C">01 CHAIN</text>
+        <rect x="112" y="42" width="64" height="24" fill="#F2F3EC" stroke="#96A195"></rect>
+        <rect x="206" y="42" width="64" height="24" fill="#F2F3EC" stroke="#96A195"></rect>
+        <rect x="300" y="42" width="64" height="24" fill="#1E4D3D" stroke="#1E4D3D"></rect>
+        <line x1="176" y1="54" x2="206" y2="54" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="270" y1="54" x2="300" y2="54" stroke="#455249" marker-end="url(#car)"></line>
+        <text x="144" y="58" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#17231E">LLM</text>
+        <text x="238" y="58" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#17231E">TOOL</text>
+        <text x="332" y="58" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#F2F3EC">OUT</text>
+
+        <text x="0" y="134" font-family="IBM Plex Mono, monospace" font-size="8" fill="#B24F2C">02 GRAPH</text>
+        <circle cx="128" cy="124" r="10" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="212" cy="106" r="10" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="212" cy="146" r="10" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="304" cy="124" r="10" fill="#1E4D3D" stroke="#1E4D3D"></circle>
+        <line x1="138" y1="120" x2="202" y2="108" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="138" y1="128" x2="202" y2="144" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="222" y1="110" x2="294" y2="121" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="222" y1="142" x2="294" y2="127" stroke="#455249" marker-end="url(#car)"></line>
+        <text x="128" y="164" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#6F7C72">STATE</text>
+
+        <text x="0" y="212" font-family="IBM Plex Mono, monospace" font-size="8" fill="#B24F2C">03 HARNESS</text>
+        <circle cx="190" cy="202" r="24" fill="none" stroke="#1E4D3D" stroke-width="1.4"></circle>
+        <path d="M190 178 A24 24 0 0 1 214 202" fill="none" stroke="#B24F2C" stroke-width="2"></path>
+        <rect x="250" y="184" width="52" height="20" fill="#F2F3EC" stroke="#96A195"></rect>
+        <rect x="250" y="210" width="52" height="20" fill="#F2F3EC" stroke="#96A195"></rect>
+        <rect x="320" y="184" width="52" height="20" fill="#F2F3EC" stroke="#96A195"></rect>
+        <line x1="214" y1="194" x2="250" y2="194" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="214" y1="210" x2="250" y2="220" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="302" y1="194" x2="320" y2="194" stroke="#455249" marker-end="url(#car)"></line>
+        <text x="190" y="205" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#1E4D3D">LOOP</text>
+
+        <text x="0" y="290" font-family="IBM Plex Mono, monospace" font-size="8" fill="#B24F2C">04 PLATFORM</text>
+        <rect x="112" y="270" width="252" height="46" fill="#F2F3EC" stroke="#1E4D3D"></rect>
+        <rect x="124" y="282" width="62" height="22" fill="#DDE1D6" stroke="#96A195"></rect>
+        <rect x="198" y="282" width="62" height="22" fill="#DDE1D6" stroke="#96A195"></rect>
+        <rect x="272" y="282" width="80" height="22" fill="#1E4D3D" stroke="#1E4D3D"></rect>
+        <text x="155" y="296" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#17231E">GW</text>
+        <text x="229" y="296" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#17231E">PLUGIN</text>
+        <text x="312" y="296" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#F2F3EC">RUNTIME</text>
+
+        <text x="0" y="372" font-family="IBM Plex Mono, monospace" font-size="8" fill="#B24F2C">05 TEAM</text>
+        <circle cx="148" cy="362" r="12" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="220" cy="342" r="12" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="220" cy="384" r="12" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+        <circle cx="306" cy="362" r="12" fill="#1E4D3D" stroke="#1E4D3D"></circle>
+        <line x1="160" y1="358" x2="208" y2="346" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="160" y1="366" x2="208" y2="380" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="232" y1="346" x2="294" y2="358" stroke="#455249" marker-end="url(#car)"></line>
+        <line x1="232" y1="380" x2="294" y2="366" stroke="#455249" marker-end="url(#car)"></line>
+        <text x="220" y="410" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="7" fill="#6F7C72">ORCHESTRATOR / WORKERS</text>
+
+        <defs>
+          <marker id="car" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#455249"></path>
+          </marker>
+        </defs>
+      </svg>
+      <figcaption>FIG. 00 — 五种骨架：Chain / Graph / Harness / Platform / Team</figcaption>
+    </figure>
+  </div>
+  <div class="cover-strip">
+    <span>核心结论：<strong>没有统一标准，只有任务形状与运维边界的匹配。</strong></span>
+    <span>Snapshot 2026-11-16 · Docs-based</span>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="toc" aria-label="目录">
+    <div class="toc-title">Contents / 目录</div>
+    <a href="#s0"><span class="n">00</span><span>结论先行</span></a>
+    <a href="#s1"><span class="n">01</span><span>坐标系</span></a>
+    <a href="#s2"><span class="n">02</span><span>样本速览</span></a>
+    <a href="#s3"><span class="n">03</span><span>逐个解剖</span></a>
+    <a href="#s4"><span class="n">04</span><span>五种骨架</span></a>
+    <a href="#s5"><span class="n">05</span><span>对比矩阵</span></a>
+    <a href="#s6"><span class="n">06</span><span>六个位置</span></a>
+    <a href="#s7"><span class="n">07</span><span>设计抉择</span></a>
+    <a href="#s8"><span class="n">08</span><span>AI-KB 映射</span></a>
+    <a href="#s9"><span class="n">09</span><span>选型结论</span></a>
+    <a href="#s10"><span class="n">10</span><span>附录</span></a>
+    <div class="toc-meta">
+      DOC · CMP-2026-11<br>
+      STATUS · REVIEW<br>
+      COMPANION · architecture-review.html
+    </div>
+  </aside>
+
+  <main id="main">
+
+    <!-- 00 -->
+    <section id="s0" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">00</div>
+        <div class="kicker">TL;DR / 结论先行</div>
+        <h2>没有最好的框架，只有最合适的骨架</h2>
+        <p class="intro">把六个项目放在一起看，会发现它们并不是同一类东西：LangChain 是框架，LangGraph 是运行时，Pi 和 Open Harness 是 harness SDK，OpenClaw 和 Hermes 是产品级平台。真正的差异不在“功能多少”，而在四个结构性选择：循环放在哪、状态放在哪、工具怎么注册、UI 怎么隔离。</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card pine">
+          <div class="tagline">Scenario A / 固定流程</div>
+          <h4>RAG、客服、文档问答</h4>
+          <p>步骤可预先确定，选 <b>Pipeline / Workflow</b>。LangChain 的链式组合、你自己的 <code class="inline">RagPipeline</code> 都够用。</p>
+        </div>
+        <div class="card amber">
+          <div class="tagline">Scenario B / 长任务</div>
+          <h4>需要恢复、审批、分支</h4>
+          <p>选 <b>Graph / Runtime</b>。LangGraph 的 state、checkpoint、interrupt 是这类问题的标准答案。</p>
+        </div>
+        <div class="card accent">
+          <div class="tagline">Scenario C / 产品化</div>
+          <h4>多渠道、插件、定时任务</h4>
+          <p>选 <b>Platform</b>。OpenClaw、Hermes 的 gateway + plugin + profile 结构值得参考，但不适合小服务照搬。</p>
+        </div>
+      </div>
+
+      <h3>一句话判断</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项目</th><th>一句话定位</th><th>代码骨架</th><th>最适合</th><th>不适合</th></tr></thead>
+          <tbody>
+            <tr><td><strong>LangChain</strong></td><td>从 Chain 走向 Harness 的 Agent 框架</td><td>Framework + thin harness</td><td>统一模型/工具接口，快速搭 Agent</td><td>需要精确控制执行流与状态</td></tr>
+            <tr><td><strong>LangGraph</strong></td><td>显式状态图的 Agent 运行时</td><td>Graph / state machine</td><td>长任务、可恢复、HITL、分支/循环</td><td>线性 RAG 流程；会引入不必要的仪式</td></tr>
+            <tr><td><strong>OpenClaw</strong></td><td>产品级个人 Agent + 内置 runtime + 插件 SDK</td><td>Platform + harness registry</td><td>多渠道个人助手、插件生态</td><td>单机小服务；平台复杂度太高</td></tr>
+            <tr><td><strong>Open Harness</strong></td><td>同名两派：state-first workflow / code-first SDK</td><td>Workflow / Harness</td><td>用代码组合 Agent、事件回放</td><td>需要稳定单一 API 的生产项目</td></tr>
+            <tr><td><strong>Hermes Agent</strong></td><td>自改进的个人 Agent 产品，单仓库 monolith</td><td>Product / platform</td><td>开箱即用、渠道多、工具多</td><td>嵌入现有服务；代码面太大</td></tr>
+            <tr><td><strong>Pi Agent</strong></td><td>干净的 harness monorepo，runtime/CLI/TUI 分层</td><td>Harness / runtime</td><td>编码 Agent、SDK 嵌入、事件流</td><td>需要内置权限/沙箱；需自己补</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>方法说明：</strong>本文基于公开文档、仓库目录与 API 说明做结构分析，不是性能 benchmark，也不代表项目整体质量排名。版本与目录会变化；结论以“结构原型”为主，而不是某一版实现细节。
+      </div>
+
+      <div class="quote">
+        框架决定你写代码的<em>姿势</em>，<br>架构决定你三年后还能不能<em>改得动</em>。
+        <cite>Comparison principle</cite>
+      </div>
+    </section>
+
+    <!-- 01 -->
+    <section id="s1" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">01</div>
+        <div class="kicker">Coordinate system / 坐标系</div>
+        <h2>先分清 Framework、Runtime、Harness、Platform</h2>
+        <p class="intro">很多比较是错的，因为把“框架”和“产品”放在同一张表里比。先校准层级：它们解决的问题不同，代码结构自然不同。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>层级</th><th>它拥有什么</th><th>典型抽象</th><th>代表</th><th>不负责</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Framework</strong></td><td>模型/工具/消息的抽象与集成</td><td>Model、Tool、Message、Middleware、Chain</td><td>LangChain、CrewAI、OpenAI Agents SDK</td><td>长期运行、恢复、部署</td></tr>
+            <tr><td><strong>Runtime</strong></td><td>执行、状态、恢复、流式、中断</td><td>Graph、Node、Edge、Checkpoint、Interrupt</td><td>LangGraph、AutoGen Core、Temporal</td><td>具体工具与业务提示词</td></tr>
+            <tr><td><strong>Harness</strong></td><td>模型循环 + 工具 + 会话 + 上下文管理</td><td>Agent、Session、Tool Registry、Event Stream</td><td>Pi Agent、OpenHarness、Claude Agent SDK、Deep Agents</td><td>多渠道产品化、组织流程</td></tr>
+            <tr><td><strong>Platform</strong></td><td>接入渠道、插件、定时任务、权限、运维</td><td>Gateway、Adapter、Plugin、Profile、Cron</td><td>OpenClaw、Hermes Agent</td><td>底层 Agent 算法本身</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="layer-stack" aria-label="Agent 技术栈层级">
+        <div class="layer">
+          <div class="layer-tag">P</div>
+          <div class="layer-body"><strong>Platform / 产品层</strong><span>渠道 · 插件 · 定时 · 权限 · 运维 —— OpenClaw / Hermes</span></div>
+        </div>
+        <div class="stack-arrow">↓ 产品化能力</div>
+        <div class="layer">
+          <div class="layer-tag">H</div>
+          <div class="layer-body"><strong>Harness / 执行外壳</strong><span>循环 · 工具 · 会话 · 上下文 · 事件 —— Pi / OpenHarness / Claude Agent SDK</span></div>
+        </div>
+        <div class="stack-arrow">↓ 长任务与状态</div>
+        <div class="layer">
+          <div class="layer-tag">R</div>
+          <div class="layer-body"><strong>Runtime / 运行时</strong><span>状态图 · checkpoint · 中断 · 流式 —— LangGraph / AutoGen Core</span></div>
+        </div>
+        <div class="stack-arrow">↓ 抽象与集成</div>
+        <div class="layer">
+          <div class="layer-tag">F</div>
+          <div class="layer-body"><strong>Framework / 框架层</strong><span>模型 · 工具 · 消息 · 中间件 —— LangChain / CrewAI / OpenAI Agents SDK</span></div>
+        </div>
+      </div>
+
+      <div class="note pine">
+        <strong>关键：</strong>同一项目可以跨层。LangChain 现在既是 framework，也提供 <code class="inline">create_agent</code> 这层 thin harness；OpenClaw 既有 platform，也有内置 runtime；Hermes 既是 product，也自带 harness。分类看它“拥有并维护”什么，而不是它“支持”什么。
+      </div>
+
+      <h3>先统一几个名称</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>LangChain / LangGraph</h4>
+          <p>不是 “LongChain / LongGraph”。LangChain 是框架，LangGraph 是它下面的低层运行时；LangChain 1.x 的 agent 构建在 LangGraph 上。</p>
+        </div>
+        <div class="card">
+          <h4>Open Harness 有两个同名项目</h4>
+          <p>本文同时列：<b>Open-Harness/open-harness</b>（Open Scaffold，state-first workflow）与 <b>MaxGfeller/open-harness</b>（OpenHarness，code-first SDK）。两者结构完全不同。</p>
+        </div>
+        <div class="card">
+          <h4>Pi Agent 指 pi.dev 的 harness</h4>
+          <p>GitHub 上有很多 fork 叫 <code class="inline">pi-agent</code>；本文以 <b>pi.dev / earendil-works/pi</b> 的 monorepo 为准：<code class="inline">ai</code> / <code class="inline">agent</code> / <code class="inline">coding-agent</code> / <code class="inline">tui</code>。</p>
+        </div>
+        <div class="card">
+          <h4>Hermes Agent 指 NousResearch 版本</h4>
+          <p>以 <b>NousResearch/hermes-agent</b> 的 Architecture 文档为准；它是一个完整产品，不是一个轻量库。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 -->
+    <section id="s2" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">02</div>
+        <div class="kicker">Samples / 样本速览</div>
+        <h2>六个项目，六种“代码长相”</h2>
+        <p class="intro">先不看细节，只抓每个项目的“第一性结构”。这决定了你读它源码时的路径，也决定了你能不能把它嵌进自己的系统。</p>
+      </div>
+
+      <div class="sample-grid">
+        <div class="sample pine">
+          <div class="top"><h3>LangChain</h3><span class="chip">Framework</span></div>
+          <p class="one">把模型、工具、消息、中间件标准化；<code class="inline">create_agent</code> 是一层可配置的 harness，底层跑在 LangGraph 上。</p>
+          <div class="meta"><b>代码重心</b> · core / community / partners<br><b>循环</b> · 框架内建 agent loop<br><b>扩展</b> · middleware / integrations</div>
+        </div>
+        <div class="sample accent">
+          <div class="top"><h3>LangGraph</h3><span class="chip clay">Runtime</span></div>
+          <p class="one">把 Agent 工作流建模为共享状态图：state、node、edge、checkpoint、interrupt。控制流显式，可恢复。</p>
+          <div class="meta"><b>代码重心</b> · graph / pregel / checkpoint<br><b>循环</b> · 图执行 + super-step<br><b>扩展</b> · 自定义 node / subgraph</div>
+        </div>
+        <div class="sample amber">
+          <div class="top"><h3>OpenClaw</h3><span class="chip">Platform</span></div>
+          <p class="one">产品级个人 Agent：内置 runtime、harness registry、plugin SDK、会话管理、多渠道接入与工具策略。</p>
+          <div class="meta"><b>代码重心</b> · src/agents + packages/agent-core<br><b>循环</b> · embedded-agent-runner<br><b>扩展</b> · plugin SDK / harness registry</div>
+        </div>
+        <div class="sample pine">
+          <div class="top"><h3>Open Harness</h3><span class="chip">Workflow / SDK</span></div>
+          <p class="one">同名两派：一派是 state-first workflow（events as truth），一派是 code-first agent SDK（Agent / Session / Middleware）。</p>
+          <div class="meta"><b>代码重心</b> · packages/core + server<br><b>循环</b> · workflow phase 或 agent loop<br><b>扩展</b> · phase / middleware / tools</div>
+        </div>
+        <div class="sample accent">
+          <div class="top"><h3>Hermes Agent</h3><span class="chip clay">Product</span></div>
+          <p class="one">自改进的个人 Agent 产品：单仓库 monolith，AIAgent 门面 + 70+ 工具 + gateway + SQLite/FTS5 + 插件 + cron。</p>
+          <div class="meta"><b>代码重心</b> · agent / tools / gateway / state<br><b>循环</b> · conversation_loop<br><b>扩展</b> · tool registry / plugins / skills</div>
+        </div>
+        <div class="sample amber">
+          <div class="top"><h3>Pi Agent</h3><span class="chip">Harness</span></div>
+          <p class="one">干净的 harness monorepo：AI 接口、Agent 运行时、编码 Agent CLI、TUI 四层分开；事件流与状态管理清晰。</p>
+          <div class="meta"><b>代码重心</b> · packages/ai · agent · coding-agent<br><b>循环</b> · agentLoop / Agent<br><b>扩展</b> · tools / hooks / steering</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>读源码的顺序建议：</strong>先找“入口与循环”，再找“状态与持久化”，最后找“工具注册与扩展点”。一个 Agent 项目的复杂度，90% 集中在这三处。
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="s3" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">03</div>
+        <div class="kicker">Dissection / 逐个解剖</div>
+        <h2>代码结构，就是它的世界观</h2>
+        <p class="intro">以下目录是按公开文档与 API 归纳的“典型结构”，不是逐文件快照。重点看三件事：循环在哪、状态在哪、扩展点在哪。</p>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>LangChain</h3><span class="type">Framework + thin harness · Python / TS</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>langchain/</b>
+├── libs/
+│   ├── <b>langchain-core/</b>        <i># Runnable / Message / Tool / Model</i>
+│   ├── <b>langchain/</b>             <i># create_agent / middleware / chains</i>
+│   ├── <b>langchain-community/</b>   <i># 第三方集成</i>
+│   └── partners/                 <i># openai / anthropic / ...</i>
+├── docs/
+└── tests/</div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>统一模型、工具、消息的抽象层；当前主推 <b>create_agent</b>，把 prompt / tools / middleware 组合成 harness。</dd>
+              <dt>循环</dt><dd>Agent loop 由框架内建；复杂控制流下沉到 LangGraph。中间件负责 guardrails、重试、路由、上下文裁剪。</dd>
+              <dt>状态</dt><dd>消息状态为主；长期记忆/检查点交给 LangGraph 或外部 store。</dd>
+              <dt>扩展</dt><dd>Middleware 是核心扩展点；集成通过 partner packages 接入，避免核心膨胀。</dd>
+              <dt>代价</dt><dd>抽象层多、版本演进快；出问题时需要同时理解 LangChain 与 LangGraph 两层。核心逻辑容易“藏在框架里”。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>借“中间件”治理横切关注点，但不要把主链路建成 LangChain 依赖。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>LangGraph</h3><span class="type">Runtime · Graph / state machine</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>langgraph/</b>
+├── <b>graph/</b>          <i># StateGraph / MessagesState / add_messages</i>
+├── <b>pregel/</b>         <i># 执行引擎：super-step / channel / 并行</i>
+├── <b>checkpoint/</b>     <i># memory / sqlite / postgres checkpointer</i>
+├── <b>store/</b>          <i># 长期记忆</i>
+├── <b>prebuilt/</b>       <i># ReAct agent / tools</i>
+├── <b>types/</b>          <i># Command / Send / interrupt</i>
+└── runtime/          <i># Runtime context / stream</i></div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>低层编排运行时：把工作流表示为共享状态图，显式控制节点、边、分支、循环与中断。</dd>
+              <dt>循环</dt><dd>图执行按 <b>super-step</b> 推进；节点做工作，边决定下一步；<code class="inline">Send</code> 做 map-reduce，<code class="inline">Command</code> 同时更新状态与路由。</dd>
+              <dt>状态</dt><dd>typed state + reducer；checkpointer 在每个 super-step 边界保存，可恢复、可 time travel；interrupt 支持人工审批。</dd>
+              <dt>扩展</dt><dd>自定义 node / subgraph / checkpointer；不强制 prompt 或 agent 架构。</dd>
+              <dt>代价</dt><dd>线性流程会被 graph 仪式拖重；节点重跑要求幂等；状态 schema 变更需要兼容旧 checkpoint。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>固定 RAG 不需要 graph；未来 Agent 需要恢复/审批时，再借它的 state + checkpoint + interrupt 思想。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>OpenClaw</h3><span class="type">Platform + built-in runtime · TypeScript</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>openclaw/</b>
+├── <b>src/agents/</b>
+│   ├── <b>embedded-agent-runner/</b>  <i># 内置 attempt loop / model / compaction</i>
+│   ├── <b>sessions/</b>               <i># session manager / resource / tools</i>
+│   ├── <b>harness/</b>                <i># registry / selection policy / lifecycle</i>
+│   ├── <b>agent-hooks/</b>            <i># compaction safeguard / context pruning</i>
+│   └── <b>agent-tools*.ts</b>          <i># tool schema / policy / sandbox edits</i>
+├── <b>packages/agent-core/</b>         <i># @openclaw/agent-core：loop / messages / skills</i>
+├── <b>src/llm/</b>                     <i># provider registry / streams</i>
+├── <b>openclaw/plugin-sdk/</b>         <i># 插件契约</i>
+└── docs/</div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>产品级个人 Agent：内置 runtime 是默认执行器，同时允许插件注册其他 harness（如 codex）。</dd>
+              <dt>循环</dt><dd><code class="inline">embedded-agent-runner</code> 负责 attempt loop、模型选择、provider 归一化、compaction、session 接线。</dd>
+              <dt>状态</dt><dd>session manager + transcript + resource manifest；模型运行时按 generation 发布，避免半新半旧状态。</dd>
+              <dt>扩展</dt><dd>插件只依赖 <code class="inline">plugin-sdk/*</code>，不 import <code class="inline">src/**</code> 内部；harness registry 按 provider/model 选择 runtime。</dd>
+              <dt>代价</dt><dd>平台复杂度高：资源发现、runtime 选择、worker pool、插件生命周期。不适合小服务直接照搬。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>借“runtime registry + 工具策略 + 插件边界”，不借它的多渠道与插件生态。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>Open Harness</h3><span class="type">同名两派 · Workflow / SDK · TypeScript</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>Open-Harness/open-harness</b>  <i># Open Scaffold：state-first</i>
+├── packages/
+│   ├── <b>core/</b>          <i># agent() / phase() / workflow() / run()</i>
+│   └── <b>server/</b>        <i># HTTP / SSE / provider</i>
+├── docs/
+│   └── <b>concepts.md</b>    <i># events / phases / observers / replay</i>
+└── examples/
+
+<b>MaxGfeller/open-harness</b>  <i># OpenHarness：code-first SDK</i>
+├── packages/
+│   ├── <b>core/</b>          <i># Agent / Session / Conversation / middleware</i>
+│   ├── <b>provider-chatgpt/</b>
+│   ├── <b>provider-vfs/</b>  <i># 虚拟文件系统</i>
+│   ├── <b>react/</b>
+│   └── <b>vue/</b>
+└── examples/{cli,nextjs-demo,nuxt-demo}</div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>两派都叫 Open Harness，但结构不同：一派把 Agent 当纯函数 + 阶段 + 事件；一派把 Agent 当可组合 SDK + Session + middleware。</dd>
+              <dt>循环</dt><dd>Open Scaffold 用 phase 图推进；OpenHarness 用 <code class="inline">Agent.run</code> / <code class="inline">Session.send</code>，中间件组合 turn tracking / compaction / retry。</dd>
+              <dt>状态</dt><dd>Open Scaffold：事件是事实，state 由事件回放派生；OpenHarness：Session 管理上下文窗口、压缩、重试、持久化。</dd>
+              <dt>扩展</dt><dd>phase / workflow / observer；或 middleware / tools / subagents / MCP / skills。</dd>
+              <dt>代价</dt><dd>命名歧义；两套生态成熟度不同；选型前必须确认你用的是哪一个。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>借“events as truth + replay/playback”做评测；借 middleware 做横切；但只引入一个明确依赖。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>Hermes Agent</h3><span class="type">Product / monolith · Python</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>hermes-agent/</b>
+├── <b>run_agent.py</b>              <i># AIAgent 门面</i>
+├── <b>agent/</b>
+│   ├── <b>conversation_loop.py</b>  <i># 主循环</i>
+│   ├── <b>prompt_builder.py</b>     <i># stable → context → volatile 分层</i>
+│   ├── <b>context_compressor.py</b> <i># 上下文压缩</i>
+│   ├── <b>memory_manager.py</b>
+│   └── <b>trajectory.py</b>         <i># 轨迹导出</i>
+├── <b>tools/</b>
+│   ├── <b>registry.py</b>           <i># 自注册工具</i>
+│   ├── terminal / file / web / browser / mcp
+│   └── <b>environments/</b>         <i># local / docker / ssh / modal / daytona</i>
+├── <b>gateway/</b>                  <i># 平台适配 / session / delivery</i>
+├── <b>hermes_state*.py</b>          <i># SQLite + FTS5 会话/状态</i>
+├── <b>hermes_cli/</b>               <i># 命令 / 配置 / auth</i>
+├── cron/ · plugins/ · skills/
+└── tests/                        <i># 官方文档：~25k tests</i></div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>开箱即用的个人 Agent 产品：CLI、TUI、gateway、cron、ACP、插件、技能、记忆、轨迹一应俱全。</dd>
+              <dt>循环</dt><dd><code class="inline">AIAgent</code> 是同步门面，实际循环在 <code class="inline">agent/conversation_loop.py</code> 与 <code class="inline">agent/turn_*.py</code>；工具调用后继续 loop。</dd>
+              <dt>状态</dt><dd>SQLite + FTS5：会话、消息、lineage、全文检索；prompt 分 stable/context/volatile 三层，配合 Anthropic prompt caching。</dd>
+              <dt>扩展</dt><dd>工具在 import 时自注册；toolset 分组；插件可注册 tools / hooks / CLI；memory 与 context engine 是单选的 provider 插件。</dd>
+              <dt>代价</dt><dd>单仓库 monolith，状态相关文件极多；产品逻辑（gateway/channels）与 Agent 核心混在一起。嵌入现有服务成本高。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>借 prompt 分层、上下文压缩、工具注册、SQLite/FTS5；不复制产品级 monolith。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="deep">
+        <div class="deep-head"><h3>Pi Agent</h3><span class="type">Harness monorepo · TypeScript</span></div>
+        <div class="deep-grid">
+          <div class="deep-tree"><b>pi-mono/</b>
+├── packages/
+│   ├── <b>ai/</b>              <i># @earendil-works/pi-ai：多 provider LLM API</i>
+│   ├── <b>agent/</b>           <i># @earendil-works/pi-agent-core：runtime</i>
+│   │   ├── agent.ts        <i># Agent：state / events / steering</i>
+│   │   ├── loop.ts         <i># agentLoop / agentLoopContinue</i>
+│   │   ├── messages.ts     <i># AgentMessage / convertToLlm</i>
+│   │   └── tools.ts        <i># AgentTool / parallel / sequential</i>
+│   ├── <b>coding-agent/</b>    <i># CLI / 工具 / 会话 / 容器化</i>
+│   └── <b>tui/</b>             <i># @earendil-works/pi-tui</i>
+└── AGENTS.md / docs/</div>
+          <div class="deep-anatomy">
+            <dl>
+              <dt>定位</dt><dd>干净的 harness：AI 层、Agent 层、编码 Agent、TUI 四层分开；可拆开嵌入，也可作为 CLI 使用。</dd>
+              <dt>循环</dt><dd><code class="inline">agentLoop</code> 驱动 turn；事件从 <code class="inline">agent_start</code> 到 <code class="inline">agent_end</code>，工具执行可并行或串行；<code class="inline">shouldStopAfterTurn</code> 控制优雅停止。</dd>
+              <dt>状态</dt><dd><code class="inline">AgentState</code>：messages / tools / model / thinkingLevel；<code class="inline">transformContext</code> 裁剪上下文，<code class="inline">convertToLlm</code> 过滤 UI-only 消息。</dd>
+              <dt>扩展</dt><dd><code class="inline">AgentTool</code> + <code class="inline">beforeToolCall</code> / <code class="inline">afterToolCall</code> hooks；steering 与 follow-up 队列支持中途干预。</dd>
+              <dt>代价</dt><dd>README 明确：不内置文件/进程/网络权限系统，需要容器或沙箱补边界；偏编码 Agent，不是通用业务 Agent 平台。</dd>
+            </dl>
+            <div class="insight"><strong>AI-KB</strong>最接近“干净 harness”的参考：借事件流、convertToLlm、steering；权限必须自己补。</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>业界常见方案：抽象对比</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>项目</th><th>核心抽象</th><th>代码结构特征</th><th>一句话评价</th></tr></thead>
+          <tbody>
+            <tr><td><strong>OpenAI Agents SDK</strong></td><td>Agent、Runner、Tool、Handoff、Guardrail、Session、Trace</td><td>minimal primitives；Python 包内按能力拆分 <code class="inline">agent / run / tools / handoffs / guardrails / sessions / tracing</code></td><td>“少抽象、可组合”的典范，适合 OpenAI 生态与快速生产化。</td></tr>
+            <tr><td><strong>Claude Agent SDK</strong></td><td>Agent loop、built-in tools、hooks、subagents、MCP、permissions、sessions</td><td>库包装 Claude Code 二进制；真正的 harness 在 Claude Code 内</td><td>买现成 harness，快速得到文件/命令/权限能力；代价是运行时与供应商绑定。</td></tr>
+            <tr><td><strong>AutoGen</strong></td><td>AgentChat、Team、Core actor、GraphFlow、Swarm</td><td><code class="inline">autogen-core</code>（事件驱动）+ <code class="inline">autogen-agentchat</code>（高层）+ <code class="inline">autogen-ext</code>（集成）</td><td>多 Agent 研究与协作模式最完整；单 RAG 服务用不上。</td></tr>
+            <tr><td><strong>CrewAI</strong></td><td>Agent（role/goal/backstory）、Task、Crew、Process、Flow</td><td>面向业务角色组织；支持 JSONC 配置、memory、knowledge、checkpoint</td><td>“业务团队”隐喻强，上手快；控制粒度与代码透明度弱于 graph/runtime。</td></tr>
+            <tr><td><strong>Google ADK</strong></td><td>LlmAgent、Tool、Sub-agent、Session、Memory、Callback、Artifact、Runner</td><td>Agent-centric；工具/会话/记忆/回调分层</td><td>云生态整合好；跨云与轻量嵌入需评估。</td></tr>
+            <tr><td><strong>Deep Agents</strong></td><td>create_deep_agent、planning、subagents、virtual FS、skills、memory、permissions</td><td>基于 LangChain + LangGraph 的“电池 included” harness；middleware + backend</td><td>长任务、复杂多步任务强；对固定 RAG 过重。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 04 -->
+    <section id="s4" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">04</div>
+        <div class="kicker">Archetypes / 五种骨架</div>
+        <h2>归根结底，只有五种代码骨架</h2>
+        <p class="intro">项目名会变，抽象会换，但代码的“骨架”只有这五类。识别骨架，比记住 API 更有用。</p>
+      </div>
+
+      <div class="archetype-grid">
+        <div class="archetype">
+          <div class="num">01</div>
+          <h4>Chain / Pipeline</h4>
+          <div class="mini">
+            <svg viewBox="0 0 180 34" aria-hidden="true">
+              <rect x="4" y="9" width="38" height="16" fill="#F2F3EC" stroke="#1E4D3D"></rect>
+              <rect x="62" y="9" width="38" height="16" fill="#F2F3EC" stroke="#1E4D3D"></rect>
+              <rect x="120" y="9" width="38" height="16" fill="#1E4D3D" stroke="#1E4D3D"></rect>
+              <line x1="42" y1="17" x2="62" y2="17" stroke="#455249" marker-end="url(#a1)"></line>
+              <line x1="100" y1="17" x2="120" y2="17" stroke="#455249" marker-end="url(#a1)"></line>
+              <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"><path d="M0 0 L10 5 L0 10z" fill="#455249"></path></marker></defs>
+            </svg>
+          </div>
+          <p>按固定顺序组合步骤；控制流由代码写死。简单、可预测、易测。</p>
+          <div class="who">LangChain classic · RAG pipeline</div>
+        </div>
+        <div class="archetype">
+          <div class="num">02</div>
+          <h4>Graph / State machine</h4>
+          <div class="mini">
+            <svg viewBox="0 0 180 34" aria-hidden="true">
+              <circle cx="24" cy="17" r="7" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <circle cx="82" cy="8" r="7" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <circle cx="82" cy="26" r="7" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <circle cx="148" cy="17" r="7" fill="#1E4D3D" stroke="#1E4D3D"></circle>
+              <line x1="31" y1="14" x2="75" y2="9" stroke="#455249"></line>
+              <line x1="31" y1="20" x2="75" y2="25" stroke="#455249"></line>
+              <line x1="89" y1="10" x2="141" y2="16" stroke="#455249"></line>
+              <line x1="89" y1="24" x2="141" y2="18" stroke="#455249"></line>
+            </svg>
+          </div>
+          <p>共享状态 + 节点 + 边；分支、循环、恢复、中断都显式建模。</p>
+          <div class="who">LangGraph · AutoGen GraphFlow</div>
+        </div>
+        <div class="archetype">
+          <div class="num">03</div>
+          <h4>Harness / Runtime loop</h4>
+          <div class="mini">
+            <svg viewBox="0 0 180 34" aria-hidden="true">
+              <circle cx="44" cy="17" r="13" fill="none" stroke="#1E4D3D" stroke-width="1.4"></circle>
+              <path d="M44 4 A13 13 0 0 1 57 17" fill="none" stroke="#B24F2C" stroke-width="2"></path>
+              <rect x="86" y="6" width="34" height="10" fill="#F2F3EC" stroke="#96A195"></rect>
+              <rect x="86" y="20" width="34" height="10" fill="#F2F3EC" stroke="#96A195"></rect>
+              <rect x="134" y="13" width="34" height="10" fill="#F2F3EC" stroke="#96A195"></rect>
+              <line x1="58" y1="12" x2="86" y2="11" stroke="#455249" marker-end="url(#a3)"></line>
+              <line x1="58" y1="22" x2="86" y2="24" stroke="#455249" marker-end="url(#a3)"></line>
+              <line x1="120" y1="18" x2="134" y2="18" stroke="#455249" marker-end="url(#a3)"></line>
+              <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"><path d="M0 0 L10 5 L0 10z" fill="#455249"></path></marker></defs>
+            </svg>
+          </div>
+          <p>模型 + 工具 + 会话的循环；工具 schema、权限、事件流是核心。</p>
+          <div class="who">Pi · OpenHarness · Claude Agent SDK</div>
+        </div>
+        <div class="archetype">
+          <div class="num">04</div>
+          <h4>Platform / Product</h4>
+          <div class="mini">
+            <svg viewBox="0 0 180 34" aria-hidden="true">
+              <rect x="4" y="5" width="172" height="24" fill="#F2F3EC" stroke="#1E4D3D"></rect>
+              <rect x="12" y="11" width="34" height="12" fill="#DDE1D6" stroke="#96A195"></rect>
+              <rect x="52" y="11" width="34" height="12" fill="#DDE1D6" stroke="#96A195"></rect>
+              <rect x="92" y="11" width="34" height="12" fill="#DDE1D6" stroke="#96A195"></rect>
+              <rect x="132" y="11" width="34" height="12" fill="#1E4D3D" stroke="#1E4D3D"></rect>
+            </svg>
+          </div>
+          <p>网关、渠道、插件、定时、配置、权限；Agent 只是其中一块。</p>
+          <div class="who">OpenClaw · Hermes Agent</div>
+        </div>
+        <div class="archetype">
+          <div class="num">05</div>
+          <h4>Multi-Agent Organization</h4>
+          <div class="mini">
+            <svg viewBox="0 0 180 34" aria-hidden="true">
+              <circle cx="90" cy="7" r="6" fill="#1E4D3D" stroke="#1E4D3D"></circle>
+              <circle cx="50" cy="26" r="6" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <circle cx="90" cy="26" r="6" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <circle cx="130" cy="26" r="6" fill="#F2F3EC" stroke="#1E4D3D"></circle>
+              <line x1="87" y1="13" x2="54" y2="21" stroke="#455249"></line>
+              <line x1="90" y1="13" x2="90" y2="20" stroke="#455249"></line>
+              <line x1="93" y1="13" x2="126" y2="21" stroke="#455249"></line>
+            </svg>
+          </div>
+          <p>角色、任务、团队、调度；用组织结构解决复杂任务。</p>
+          <div class="who">AutoGen · CrewAI</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>骨架</th><th>代码长相</th><th>强项</th><th>代价</th><th>什么时候选</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Chain / Pipeline</strong></td><td>线性函数组合；步骤在代码里</td><td>简单、可测、延迟可控</td><td>动态分支/恢复难</td><td>RAG、客服、文档问答</td></tr>
+            <tr><td><strong>Graph / State machine</strong></td><td>state + node + edge + checkpointer</td><td>显式控制、可恢复、可中断</td><td>仪式感重、状态 schema 成本</td><td>长任务、审批、复杂分支</td></tr>
+            <tr><td><strong>Harness / Runtime</strong></td><td>agent loop + tools + events + session</td><td>工具生态、流式、可嵌入</td><td>权限/沙箱要自己补</td><td>编码 Agent、通用工具 Agent</td></tr>
+            <tr><td><strong>Platform / Product</strong></td><td>gateway + adapters + plugins + cron</td><td>产品化完整、渠道多</td><td>重、耦合、难嵌入</td><td>个人助手、跨平台产品</td></tr>
+            <tr><td><strong>Multi-Agent</strong></td><td>agents + tasks + teams + orchestration</td><td>角色分工、并行</td><td>协调成本、调试困难</td><td>任务天然多角色、可并行</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="s5" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">05</div>
+        <div class="kicker">Matrix / 对比矩阵</div>
+        <h2>没有全能选手，只有匹配度</h2>
+        <p class="intro">以下评分是“结构匹配度”，不是性能或质量排名。强/中/弱描述的是该维度在代码结构上的天然优势与代价。</p>
+      </div>
+
+      <h3>A · 六个深度样本</h3>
+      <div class="table-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>项目</th>
+              <th>上手速度</th>
+              <th>控制粒度</th>
+              <th>状态/恢复</th>
+              <th>工具生态</th>
+              <th>多 Agent</th>
+              <th>结构清晰度</th>
+              <th>AI-KB 适配</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>LangChain</td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td></tr>
+            <tr><td>LangGraph</td><td><span class="r-weak">弱</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td></tr>
+            <tr><td>OpenClaw</td><td><span class="r-weak">弱</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>Open Harness</td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td></tr>
+            <tr><td>Hermes Agent</td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>Pi Agent</td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="matrix-note">AI-KB 适配 = “结构可借鉴度 + 嵌入成本”的综合判断，不是项目优劣。</p>
+
+      <h3>B · 业界常见方案</h3>
+      <div class="table-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>项目</th>
+              <th>上手速度</th>
+              <th>控制粒度</th>
+              <th>状态/恢复</th>
+              <th>工具生态</th>
+              <th>多 Agent</th>
+              <th>结构清晰度</th>
+              <th>AI-KB 适配</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI Agents SDK</td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td></tr>
+            <tr><td>Claude Agent SDK</td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>AutoGen</td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>CrewAI</td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>Google ADK</td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-weak">弱</span></td></tr>
+            <tr><td>Deep Agents</td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-strong">强</span></td><td><span class="r-mid">中</span></td><td><span class="r-mid">中</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="matrix-note">矩阵是“结构判断”，不是 benchmark；具体版本、生态与团队经验会改变最终选择。</p>
+
+      <div class="note clay">
+        <strong>读矩阵的方法：</strong>不要问“谁分高”，要问“我的任务形状是哪一列”。固定 RAG 的“控制粒度”需求其实很低；长任务 Agent 的“状态/恢复”权重极高；多渠道产品的“工具生态”与“运维”权重大于“代码清晰度”。
+      </div>
+    </section>
+
+    <!-- 06 -->
+    <section id="s6" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">06</div>
+        <div class="kicker">Six positions / 六个位置</div>
+        <h2>循环、状态、工具、Prompt、Transport、扩展点</h2>
+        <p class="intro">这六个位置决定了一个 Agent 项目是否“好读、好改、好嵌”。下表把六个样本放在同一组坐标里。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table class="position-table">
+          <thead>
+            <tr><th>项目</th><th>循环在哪</th><th>状态在哪</th><th>工具在哪</th><th>Prompt 在哪</th><th>UI / Transport</th><th>扩展点</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>LangChain</td>
+              <td><code class="inline">create_agent</code> 内建 loop；复杂流下沉 LangGraph</td>
+              <td>messages；长期记忆/checkpoint 交给 LangGraph/store</td>
+              <td><code class="inline">tools=</code> + MCP；tool schema 自动生成</td>
+              <td>system_prompt + middleware</td>
+              <td>SDK 调用；无强绑定 UI</td>
+              <td>middleware / integrations</td>
+            </tr>
+            <tr>
+              <td>LangGraph</td>
+              <td>图执行引擎（Pregel / super-step）</td>
+              <td>typed state + reducer + checkpointer</td>
+              <td>node 内的普通函数/工具；不强制 registry</td>
+              <td>不规定；由 node 自己组装</td>
+              <td>SDK / Agent Server</td>
+              <td>node / subgraph / checkpointer</td>
+            </tr>
+            <tr>
+              <td>OpenClaw</td>
+              <td><code class="inline">embedded-agent-runner</code> + <code class="inline">agent-core</code></td>
+              <td>session manager + transcript + generation snapshot</td>
+              <td><code class="inline">agent-tools*.ts</code> + tool policy + plugin SDK</td>
+              <td>prompt templates / skills / resource manifest</td>
+              <td>Gateway + TUI + 多渠道适配</td>
+              <td>plugin SDK / harness registry</td>
+            </tr>
+            <tr>
+              <td>Open Harness</td>
+              <td>phase workflow 或 <code class="inline">Agent.run</code> / <code class="inline">Session.send</code></td>
+              <td>events → state（Scaffold）；Session 上下文（SDK）</td>
+              <td>tools / providers / vfs / MCP</td>
+              <td>agent prompt / phase prompt</td>
+              <td>HTTP/SSE + React/Vue</td>
+              <td>phase / middleware / subagents</td>
+            </tr>
+            <tr>
+              <td>Hermes Agent</td>
+              <td><code class="inline">agent/conversation_loop.py</code> + <code class="inline">AIAgent</code></td>
+              <td>SQLite + FTS5 + lineage；prompt 分层缓存</td>
+              <td><code class="inline">tools/registry.py</code> + toolsets + environments</td>
+              <td><code class="inline">prompt_builder</code>：stable / context / volatile</td>
+              <td>CLI / TUI / Gateway / ACP / API</td>
+              <td>tool registry / plugins / skills / memory provider</td>
+            </tr>
+            <tr>
+              <td>Pi Agent</td>
+              <td><code class="inline">agentLoop</code> / <code class="inline">Agent</code></td>
+              <td><code class="inline">AgentState</code> + messages + sessionId</td>
+              <td><code class="inline">AgentTool</code> + before/after hooks + parallel/sequential</td>
+              <td><code class="inline">systemPrompt</code> + <code class="inline">transformContext</code></td>
+              <td>SDK / coding-agent CLI / TUI</td>
+              <td>events / tools / steering / follow-up</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card pine">
+          <h4>最值得学的一点</h4>
+          <p>把“循环”与“业务”分开。Pi 的 <code class="inline">agentLoop</code>、LangGraph 的 graph runtime、OpenClaw 的 runner 都不关心你的业务 Prompt；业务通过 tools / nodes / phases 接入。</p>
+        </div>
+        <div class="card accent">
+          <h4>最常见的错误</h4>
+          <p>把循环写进业务函数、把状态塞进全局变量、把工具注册写成 import 副作用。项目一大，三件事会同时爆炸：不可测、不可恢复、不可扩展。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="s7" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">07</div>
+        <div class="kicker">Design choices / 设计抉择</div>
+        <h2>六个抉择，决定你的架构寿命</h2>
+        <p class="intro">以下不是“标准答案”，而是从这些项目里提炼出的取舍。每个抉择都给出业界做法与 AI-KB 的建议。</p>
+      </div>
+
+      <div class="borrow-grid">
+        <div class="borrow yes">
+          <h4>1 · 状态放哪？</h4>
+          <p><b>业界：</b>LangGraph 用 checkpoint；Hermes 用 SQLite+FTS5；OpenClaw 用 session manager；Pi 用 AgentState；Open Scaffold 用事件回放。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>会话/评测继续 SQLite；Agent 状态用可序列化 <code class="inline">AgentState</code> + checkpoint，不放进全局变量。</p>
+          <div class="src">State is a first-class artifact</div>
+        </div>
+        <div class="borrow yes">
+          <h4>2 · 循环放哪？</h4>
+          <p><b>业界：</b>框架/运行时拥有 loop；业务只写 node / tool / phase。Pi 的 <code class="inline">agentLoop</code> 是最干净的分离。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>RAG 流水线是“无循环 workflow”；未来 Agent 才有 loop。不要为了统一，把 RAG 强行包成 ReAct。</p>
+          <div class="src">Loop is infrastructure, not business</div>
+        </div>
+        <div class="borrow yes">
+          <h4>3 · 工具怎么注册？</h4>
+          <p><b>业界：</b>LangChain 函数 + schema；Hermes 自注册 registry + toolsets；Pi <code class="inline">AgentTool</code>；OpenClaw tool policy + plugin SDK。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>用显式 <code class="inline">ToolRegistry</code>，每个工具带 schema、权限、超时、幂等标记；拒绝 import 副作用注册。</p>
+          <div class="src">Typed tools, explicit registry</div>
+        </div>
+        <div class="borrow yes">
+          <h4>4 · Prompt 放哪？</h4>
+          <p><b>业界：</b>Hermes 分 stable/context/volatile 三层；OpenClaw 用模板 + skills；LangChain 用 system prompt + middleware。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>Prompt 进 <code class="inline">qa/prompts/*.md</code>，带版本、变量、changelog；优化器只能追加受控规则。</p>
+          <div class="src">Prompts are versioned assets</div>
+        </div>
+        <div class="borrow yes">
+          <h4>5 · UI / Transport 怎么隔离？</h4>
+          <p><b>业界：</b>Pi/OpenHarness 以 SDK 为核心，CLI/React/Vue 只是适配器；Hermes/OpenClaw 有独立 gateway。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>FastAPI 路由只做协议转换；页面用模板/静态资源；核心不 import FastAPI。</p>
+          <div class="src">Transport is an adapter</div>
+        </div>
+        <div class="borrow yes">
+          <h4>6 · 扩展点怎么设计？</h4>
+          <p><b>业界：</b>LangChain middleware；OpenClaw plugin SDK；Hermes plugins/skills；Pi hooks；LangGraph subgraph。</p>
+          <p style="margin-top:6px"><b>AI-KB：</b>先做 3 个稳定端口（LLM / SearchIndex / Repository），再加 middleware；不要一开始做插件市场。</p>
+          <div class="src">Ports before plugins</div>
+        </div>
+      </div>
+
+      <h3>一个最小 Agent loop，应该长什么样</h3>
+      <pre class="code"><code>def run(goal: str, ctx: AgentContext) -&gt; AgentResult:
+    state = AgentState.new(goal=goal, budget=ctx.budget)
+    checkpoint.save(state)
+
+    while state.status not in {"done", "failed", "need_human"}:
+        if state.steps &gt;= ctx.max_steps:
+            state.fail("max_steps_exceeded")
+            break
+        if state.budget.exhausted():
+            state.fail("budget_exhausted")
+            break
+
+        plan = ctx.llm.plan(state)              # 结构化输出
+        if plan.kind == "final":
+            state.finish(plan.answer)
+            break
+
+        tool = ctx.tools.get(plan.tool)          # registry + schema
+        ctx.guardrails.check(plan, state)        # 权限 / 参数 / 风险
+        result = tool.invoke(plan.args, ctx.tool_ctx)
+        state.observe(tool.name, result)
+        checkpoint.save(state)
+
+    return state.to_result()</code></pre>
+      <p class="small">这个 loop 的重点不是代码，而是四个约束：<b>最大步数</b>、<b>预算</b>、<b>工具白名单</b>、<b>可恢复状态</b>。没有这四样，Agent 就是不可运维的循环。</p>
+    </section>
+
+    <!-- 08 -->
+    <section id="s8" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">08</div>
+        <div class="kicker">Mapping / 对 AI-KB 的启示</div>
+        <h2>Workflow 为体，Harness 为壳，Agent 为翼</h2>
+        <p class="intro">AI-KB 当前是一个确定性的多轮 RAG 服务，外加一个受限的优化 Agent。它不需要变成 LangGraph 或 OpenClaw；它需要的是把“未来 Agent 需要的接缝”提前留好。</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card pine">
+          <div class="tagline">Now / 现在</div>
+          <h4>确定性 RAG 服务</h4>
+          <p>索引 → 检索 → 融合 → 上下文 → 生成 → 引用校验。步骤固定，可评测、可回滚、低延迟。</p>
+        </div>
+        <div class="card accent">
+          <div class="tagline">Future / 未来</div>
+          <h4>可选的 Agent 外壳</h4>
+          <p>工具注册、状态机、记忆、护栏、轨迹评测。默认关闭，按 profile / 请求灰度。</p>
+        </div>
+      </div>
+
+      <h3>值得借的六件事</h3>
+      <div class="borrow-grid">
+        <div class="borrow yes">
+          <h4>LangGraph · 显式状态</h4>
+          <p>未来 Agent 用 typed state + checkpoint + interrupt；不要用全局变量或裸 dict 保存执行状态。</p>
+          <div class="src">Borrow the idea, not the dependency</div>
+        </div>
+        <div class="borrow yes">
+          <h4>Pi · 事件流</h4>
+          <p><code class="inline">agent_start → turn → tool → agent_end</code> 的事件模型，天然适配流式 UI 与轨迹回放。</p>
+          <div class="src">Events before callbacks</div>
+        </div>
+        <div class="borrow yes">
+          <h4>OpenClaw · 工具策略</h4>
+          <p>工具 schema、权限、before/after hook、runtime registry；把“能做什么”放在代码里，不放在 prompt 里。</p>
+          <div class="src">Policy at the boundary</div>
+        </div>
+        <div class="borrow yes">
+          <h4>Hermes · Prompt 分层</h4>
+          <p>stable / context / volatile 三层，静态部分可缓存；长会话用压缩，而不是无限堆历史。</p>
+          <div class="src">Context engineering</div>
+        </div>
+        <div class="borrow yes">
+          <h4>Open Harness · 事件回放</h4>
+          <p>事件是事实，state 由事件派生；评测可以“录一次、回放多次”，降低 LLM 非确定性带来的测试成本。</p>
+          <div class="src">Replayable by design</div>
+        </div>
+        <div class="borrow yes">
+          <h4>LangChain · 中间件</h4>
+          <p>重试、护栏、路由、上下文裁剪做成 middleware；不要让每个 endpoint 复制样板。</p>
+          <div class="src">Cross-cutting concerns</div>
+        </div>
+      </div>
+
+      <h3>不该照搬的六件事</h3>
+      <div class="borrow-grid">
+        <div class="borrow no">
+          <h4>不要为了 Agent 而 Agent</h4>
+          <p>固定 RAG 流程用 workflow 更好；自主循环会增加延迟、成本与不可解释性。</p>
+        </div>
+        <div class="borrow no">
+          <h4>不要复制产品级 gateway</h4>
+          <p>OpenClaw/Hermes 的 25+ 渠道、cron、插件市场，对本地知识库服务是负担。</p>
+        </div>
+        <div class="borrow no">
+          <h4>不要照搬 monorepo 规模</h4>
+          <p>Hermes 的 <code class="inline">hermes_state_*.py</code> 与 70+ 工具是产品演化结果，不是起步架构。</p>
+        </div>
+        <div class="borrow no">
+          <h4>不要一开始做多 Agent</h4>
+          <p>多 Agent 的协调、评测、调试成本高；单 Agent + 工具通常足够。</p>
+        </div>
+        <div class="borrow no">
+          <h4>不要暴露裸 shell / 文件工具</h4>
+          <p>Pi 明确不自带权限系统；AI-KB 若加工具，必须白名单、沙箱、人工确认。</p>
+        </div>
+        <div class="borrow no">
+          <h4>不要让核心依赖框架</h4>
+          <p>LangChain/LangGraph 适合做适配层，不适合做领域模型；核心 <code class="inline">qa/</code> 不应 import 它们。</p>
+        </div>
+      </div>
+
+      <h3>推荐的混合结构</h3>
+      <div class="tree"><b>ai-kb-agent/</b>
+├── <b>api/</b>                     <i># FastAPI：协议转换、DTO、页面</i>
+├── <b>qa/</b>                      <i># 确定性 RAG：pipeline / rewrite / context / citation</i>
+├── <b>conversations/</b>           <i># 会话：窗口、摘要、实体槽</i>
+├── <b>analytics/</b>               <i># 评估、访问、轨迹</i>
+├── <b>retrieval/</b>               <i># BM25 / 向量 / 融合 / 父子扩展</i>
+├── <b>domain/</b>                  <i># Chunk / Evidence / Answer / Ports</i>
+├── <b>infra/</b>                   <i># LLM / Embedding / SQLite / Files</i>
+├── <b>agent/</b>                   <em># 未来：默认关闭，按需启用</em>
+│   ├── runtime.py             <i># loop + budget + termination</i>
+│   ├── state.py               <i># AgentState + checkpoint</i>
+│   ├── tools/registry.py      <i># schema + permissions + timeout</i>
+│   ├── memory/                <i># working / episodic / semantic</i>
+│   └── guardrails/            <i># input / tool / output / cost</i>
+└── <b>optimization/</b>            <i># 现有自优化 Agent，保留为旁路</i></div>
+
+      <h3>什么时候从 Workflow 升级到 Agent？</h3>
+      <div class="decision-map">
+        <div class="decision-row">
+          <div class="n">01</div>
+          <div class="q">任务步骤能否在写代码时确定？</div>
+          <div class="a"><b>能</b> → 保持 Workflow；不要引入 Agent loop。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">02</div>
+          <div class="q">是否需要模型自主选择工具/数据源？</div>
+          <div class="a"><b>否</b> → RAG/Workflow；<b>是</b> → 轻量 Harness（单 Agent + 工具）。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">03</div>
+          <div class="q">是否需要跨请求恢复、人工审批、长任务？</div>
+          <div class="a"><b>是</b> → 引入 Graph/Runtime 的 checkpoint + interrupt；否则不要。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">04</div>
+          <div class="q">是否有多个天然独立的角色需要并行？</div>
+          <div class="a"><b>是</b> → 考虑多 Agent；<b>否</b> → 单 Agent + 工具优先。</div>
+        </div>
+        <div class="decision-row">
+          <div class="n">05</div>
+          <div class="q">是否需要多渠道、插件、定时任务？</div>
+          <div class="a"><b>是</b> → 单独做 Platform 层；不要混进 Agent 核心。</div>
+        </div>
+      </div>
+
+      <div class="note pine">
+        <strong>结论：</strong>AI-KB 的最优结构不是“选一个框架”，而是“保留自己的 workflow 核心 + 借六家的局部思想”。这比直接套 LangGraph 或 OpenClaw 更轻，也比完全自研更稳。
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section id="s9" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">09</div>
+        <div class="kicker">Verdict / 选型结论</div>
+        <h2>按任务形状选，不按热度选</h2>
+        <p class="intro">最后给出一张“场景 → 推荐”的表，以及六个样本的一句话判决。用于评审时快速对齐。</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>你的场景</th><th>推荐骨架</th><th>参考项目</th><th>不要做什么</th></tr></thead>
+          <tbody>
+            <tr><td>固定 RAG / 文档问答</td><td>Pipeline</td><td>自有 <code class="inline">RagPipeline</code>、LangChain 的薄封装</td><td>不要上 Graph、不要上多 Agent</td></tr>
+            <tr><td>多轮对话 + 改写 + 引用</td><td>Pipeline + Session</td><td>AI-KB 现有方向、OpenHarness Session 思路</td><td>不要把历史当证据、不要无限堆上下文</td></tr>
+            <tr><td>需要工具调用的编码/研究 Agent</td><td>Harness</td><td>Pi、OpenHarness、Claude Agent SDK</td><td>不要自己从零写 tool loop 与流式</td></tr>
+            <tr><td>长任务、审批、可恢复</td><td>Graph / Runtime</td><td>LangGraph、Temporal</td><td>不要用内存状态、不要省略幂等</td></tr>
+            <tr><td>跨渠道个人助手</td><td>Platform</td><td>OpenClaw、Hermes</td><td>不要把 gateway 塞进 Agent 核心</td></tr>
+            <tr><td>角色分工明确的复杂流程</td><td>Multi-Agent</td><td>AutoGen、CrewAI</td><td>不要为了“看起来智能”而拆角色</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>一句话判决</h3>
+      <div class="grid-2">
+        <div class="card"><h4>LangChain</h4><p>最好的“标准化层”，不是最好的“控制层”。用它的集成与中间件，别把核心逻辑交给它。</p></div>
+        <div class="card"><h4>LangGraph</h4><p>长任务 Agent 的标准答案；但固定 RAG 用它，是用起重机搬茶杯。</p></div>
+        <div class="card"><h4>OpenClaw</h4><p>产品化最完整的参考；学它的 runtime registry 与插件边界，别学它的体量。</p></div>
+        <div class="card"><h4>Open Harness</h4><p>“事件是事实”与“middleware 组合”值得借；先确认你用的是哪一个同名项目。</p></div>
+        <div class="card"><h4>Hermes Agent</h4><p>Prompt 分层、上下文压缩、工具注册的活教材；但它是产品，不是库。</p></div>
+        <div class="card"><h4>Pi Agent</h4><p>最干净的 harness 结构之一；借事件流与 convertToLlm，权限与沙箱自己补。</p></div>
+      </div>
+
+      <div class="quote">
+        不要问“哪个框架最好”，<br>要问“哪个骨架，最像我的<em>任务</em>”。
+        <cite>Final verdict</cite>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section id="s10" class="reveal">
+      <div class="sec-head">
+        <div class="ghost-num">10</div>
+        <div class="kicker">Appendix / 附录</div>
+        <h2>资料、术语与方法</h2>
+        <p class="intro">所有结构判断都来自公开文档与仓库目录；建议评审时按链接核对最新版本。</p>
+      </div>
+
+      <h3>A · 资料来源</h3>
+      <ul class="source-list">
+        <li><span class="tag">LangChain</span><a href="https://docs.langchain.com/oss/python/langchain/overview">Overview · create_agent / Middleware</a></li>
+        <li><span class="tag">LangChain</span><a href="https://docs.langchain.com/oss/python/concepts/products">Frameworks / Runtimes / Harnesses</a></li>
+        <li><span class="tag">LangGraph</span><a href="https://docs.langchain.com/oss/python/langgraph/overview">Overview</a> · <a href="https://docs.langchain.com/oss/python/langgraph/graph-api">Graph API</a></li>
+        <li><span class="tag">Deep Agents</span><a href="https://docs.langchain.com/oss/python/deepagents/overview">Overview</a></li>
+        <li><span class="tag">OpenClaw</span><a href="https://docs.openclaw.ai/agent-runtime-architecture">Agent runtime architecture</a> · <a href="https://github.com/openclaw/openclaw">GitHub</a></li>
+        <li><span class="tag">Open Harness</span><a href="https://open-harness.github.io/open-harness">Open Scaffold docs</a> · <a href="https://github.com/Open-Harness/open-harness">GitHub</a></li>
+        <li><span class="tag">OpenHarness</span><a href="https://github.com/MaxGfeller/open-harness">MaxGfeller/open-harness</a> · <a href="https://docs.open-harness.dev">docs</a></li>
+        <li><span class="tag">Hermes</span><a href="https://hermes-agent.nousresearch.com/docs/developer-guide/architecture">Architecture</a> · <a href="https://github.com/NousResearch/hermes-agent">GitHub</a></li>
+        <li><span class="tag">Pi Agent</span><a href="https://github.com/pipiha/pi-agent">GitHub</a> · <a href="https://pi.dev">pi.dev</a></li>
+        <li><span class="tag">OpenAI</span><a href="https://openai.github.io/openai-agents-python/">Agents SDK</a> · <a href="https://openai.github.io/openai-agents-python/multi_agent/">Orchestration</a></li>
+        <li><span class="tag">Claude</span><a href="https://docs.claude.com/en/api/agent-sdk/overview">Agent SDK overview</a></li>
+        <li><span class="tag">AutoGen</span><a href="https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/index.html">AgentChat</a></li>
+        <li><span class="tag">CrewAI</span><a href="https://docs.crewai.com/en/concepts/crews">Crews</a></li>
+        <li><span class="tag">Google ADK</span><a href="https://google.github.io/adk-docs/">Agent Development Kit</a></li>
+        <li><span class="tag">Background</span><a href="https://www.anthropic.com/research/building-effective-agents">Building Effective Agents</a> · <a href="https://github.com/humanlayer/12-factor-agents">12-Factor Agents</a> · <a href="https://modelcontextprotocol.io">MCP</a></li>
+      </ul>
+
+      <h3>B · 术语</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>术语</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td>Agent loop</td><td>模型调用 → 工具调用 → 观察结果 → 再调用的循环。</td></tr>
+            <tr><td>Harness</td><td>围绕模型循环的外壳：工具、会话、上下文、权限、事件、UI 适配。</td></tr>
+            <tr><td>Runtime</td><td>负责执行、状态、恢复、流式、中断的底层引擎。</td></tr>
+            <tr><td>Checkpoint</td><td>在某个执行边界保存状态，支持恢复、回放、time travel。</td></tr>
+            <tr><td>HITL</td><td>Human-in-the-loop：暂停执行，等待人工审批或修改。</td></tr>
+            <tr><td>Event sourcing</td><td>事件是事实，状态由事件回放派生；便于审计、回放、分支。</td></tr>
+            <tr><td>MCP</td><td>Model Context Protocol：工具/资源/提示词的标准化接口。</td></tr>
+            <tr><td>Middleware</td><td>在 Agent 执行前后插入的横切逻辑：重试、护栏、压缩、追踪。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>C · 方法与限制</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>本文怎么得出的结论</h4>
+          <p>阅读公开文档与仓库目录，提取“循环/状态/工具/Prompt/Transport/扩展点”六个位置，再按“任务形状”匹配骨架。没有做性能跑分，也没有做功能逐项对照。</p>
+        </div>
+        <div class="card">
+          <h4>哪些地方可能变化</h4>
+          <p>目录与 API 随版本演进；同名项目（Open Harness、Pi Agent fork）容易混淆；部分项目的“产品层”与“库层”边界并不严格。选型前请以目标版本源码为准。</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>配套文档：</strong>本文是 <a href="./architecture-review.html">architecture-review.html</a> 的对比篇。前者给出 AI-KB 的目标结构与迁移计划；本文解释这些设计取舍在业界的位置。实现级细节见 <a href="./detailed-design.html">detailed-design.html</a>。
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <span>Agent Code Structure Comparison · v1.0 · 2026-11-16</span>
+  <span class="end-mark">End of document</span>
+</footer>
+
+<div class="reviewbar" role="region" aria-label="阅读工具">
+  <div class="rb-progress">
+    <div class="txt">Reading · <span data-read-text>0%</span></div>
+    <div class="bar"><i data-read></i></div>
+  </div>
+  <button type="button" data-print>打印 / PDF</button>
+  <button type="button" data-top>回到顶部</button>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  function revealNow(el) { el.classList.add("in"); }
+
+  if (!reduce && "IntersectionObserver" in window) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          revealNow(entry.target);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05 });
+    reveals.forEach(function (el) { revealObserver.observe(el); });
+    setTimeout(function () { reveals.forEach(revealNow); }, 3200);
+  } else {
+    reveals.forEach(revealNow);
+  }
+  if (/[?&](static|print)=1/.test(location.search)) { reveals.forEach(revealNow); }
+
+  // Scrollspy
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute("href")); }).filter(Boolean);
+  function setActive(id) {
+    links.forEach(function (a) {
+      a.classList.toggle("active", a.getAttribute("href") === "#" + id);
+    });
+  }
+  if ("IntersectionObserver" in window) {
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { setActive(entry.target.id); }
+      });
+    }, { rootMargin: "-12% 0px -70% 0px", threshold: 0 });
+    sections.forEach(function (s) { spy.observe(s); });
+  }
+
+  // Reading progress
+  function updateRead() {
+    var doc = document.documentElement;
+    var max = doc.scrollHeight - window.innerHeight;
+    var pct = max > 0 ? Math.round((window.scrollY / max) * 100) : 0;
+    pct = Math.max(0, Math.min(100, pct));
+    document.querySelectorAll("[data-read]").forEach(function (el) { el.style.width = pct + "%"; });
+    document.querySelectorAll("[data-read-text]").forEach(function (el) { el.textContent = pct + "%"; });
+  }
+  window.addEventListener("scroll", updateRead, { passive: true });
+  window.addEventListener("resize", updateRead);
+  updateRead();
+
+  // Print / top
+  document.querySelectorAll("[data-print]").forEach(function (btn) {
+    btn.addEventListener("click", function () { window.print(); });
+  });
+  document.querySelectorAll("[data-top]").forEach(function (btn) {
+    btn.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); });
+  });
+
+  // Copy buttons
+  document.querySelectorAll("pre.code").forEach(function (pre) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = "复制";
+    btn.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      var text = code ? code.innerText : pre.innerText;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = "已复制";
+          setTimeout(function () { btn.textContent = "复制"; }, 1400);
+        }).catch(function () { btn.textContent = "失败"; });
+      } else {
+        btn.textContent = "不可用";
+      }
+    });
+    pre.appendChild(btn);
+  });
+})();
+</script>
+
+</body>
+</html>

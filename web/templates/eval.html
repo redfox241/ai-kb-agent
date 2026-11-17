@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-KB 多维评估 · 端口 @PORT@</title>
+<link rel="stylesheet" href="/static/eval.css">
+</head>
+<body>
+  <div class="top">
+    <h1>🧭 AI-KB 多维评估</h1>
+    <div class="badge">端口 <span class="port">@PORT@</span></div>
+    <div class="nav"><a href="/">问答</a><a href="/eval" class="on">多维评估</a><a href="/analysis">分析</a></div>
+  </div>
+
+  <div class="wrap">
+    <div class="query">
+      <textarea id="q" placeholder="输入问题，从多个维度评估回答质量，例如：土地改革的意义是什么？"></textarea>
+      <button id="btn">评估</button>
+    </div>
+    <div class="status" id="status"></div>
+
+    <div id="result" class="hidden">
+      <div class="grid">
+        <!-- 左：总分 -->
+        <div class="card">
+          <h3>综合评分</h3>
+          <div class="ring" id="ring"><div class="ring-in" id="totalNum">-</div></div>
+          <div class="total-label" id="totalLabel">加权 40%准确 + 40%相关 + 20%完整</div>
+          <div style="text-align:center; margin-top:8px;" id="tags"></div>
+          <div class="weak" style="font-size:12px; color:var(--muted);" id="reason"></div>
+        </div>
+        <!-- 右：维度 + 评语 -->
+        <div>
+          <div class="card" id="dimsCard">
+            <h3>分维度评分</h3>
+            <div id="dims"></div>
+          </div>
+          <div class="card" id="weakCard">
+            <h3>改进建议</h3>
+            <div class="weak" id="weak"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>回答内容</h3>
+        <div class="answer" id="answer"></div>
+      </div>
+      <div class="card">
+        <h3>参考来源</h3>
+        <div id="srcs" style="font-size:12px;color:var(--muted);"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="/static/eval.js"></script>
+</body>
+</html>
