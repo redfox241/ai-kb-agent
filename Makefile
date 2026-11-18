@@ -1,4 +1,4 @@
-.PHONY: test arch snapshot run stop status benchmark gate e2e
+.PHONY: test arch snapshot run stop status benchmark agent-gold agent-eval gate e2e
 
 PYTHON ?= .venv/bin/python
 
@@ -22,6 +22,12 @@ status:
 
 benchmark:
 	$(PYTHON) scripts/eval_multiturn.py --base http://127.0.0.1:8002 --out eval_mt.json
+
+agent-gold:
+	$(PYTHON) scripts/eval_agent.py --verify-gold
+
+agent-eval:
+	$(PYTHON) scripts/eval_agent.py --mode baseline --base http://127.0.0.1:8002 --out eval/agent_baseline.json
 
 gate:
 	bash scripts/release_gate.sh

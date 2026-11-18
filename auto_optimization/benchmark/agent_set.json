@@ -1,0 +1,297 @@
+{
+  "version": "v0",
+  "description": "Agent 评测集：多跳 / 对比 / 聚合 / 核验 / 报告 / 拒答。gold_docs 为 vault 相对路径，用于衡量证据召回而不是只看 LLM 打分。",
+  "vault_root": "/Users/tab/project/my-llm-wiki",
+  "taxonomy": {
+    "multi_hop": "需要串联 2 篇以上文档",
+    "comparison": "横向对比，需要分别取证再对齐",
+    "aggregation": "遍历同类页面并归纳",
+    "verification": "核验知识库是否覆盖、是否有冲突",
+    "report": "结构化长输出",
+    "abstention": "知识库不覆盖，必须拒答或标注缺口"
+  },
+  "tasks": [
+    {
+      "id": "mh-01",
+      "type": "multi_hop",
+      "question": "长征从什么时候开始、持续到什么时候，全程大约多少公里？",
+      "gold_docs": ["wiki/concepts/长征.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["1934", "1935", "12,500"],
+      "note": "单页但需要完整读取定义段，作为多跳基线"
+    },
+    {
+      "id": "mh-02",
+      "type": "multi_hop",
+      "question": "长征途中哪次会议确立了毛泽东的领导地位？这次会议距离百团大战爆发多少年？",
+      "gold_docs": ["wiki/concepts/长征.md", "wiki/concepts/百团大战.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["遵义会议", "5"],
+      "note": "1935 与 1940 的跨文档计算"
+    },
+    {
+      "id": "mh-03",
+      "type": "multi_hop",
+      "question": "毛泽东、彭德怀、周恩来在长征和抗战中的角色分别是什么？",
+      "gold_docs": [
+        "wiki/sources/毛泽东.md",
+        "wiki/sources/彭德怀.md",
+        "wiki/sources/周恩来.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false,
+      "note": "三篇人物页的角色对齐，单次检索很难同时命中"
+    },
+    {
+      "id": "mh-04",
+      "type": "multi_hop",
+      "question": "庐山会议与百团大战相隔多少年？两次事件分别与谁直接相关？",
+      "gold_docs": ["wiki/concepts/庐山会议.md", "wiki/concepts/百团大战.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["19", "彭德怀"],
+      "note": "1940 与 1959；两次事件都关联彭德怀"
+    },
+    {
+      "id": "mh-05",
+      "type": "multi_hop",
+      "question": "从长征到百团大战，红军的作战对象和作战方式发生了什么变化？",
+      "gold_docs": ["wiki/concepts/长征.md", "wiki/concepts/百团大战.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "note": "需要从两页提炼对比，而不是复述定义"
+    },
+    {
+      "id": "mh-06",
+      "type": "multi_hop",
+      "question": "遵义会议在知识库的哪些页面中被提及？它分别改变了什么？",
+      "gold_docs": [
+        "wiki/concepts/长征.md",
+        "wiki/sources/毛泽东.md",
+        "wiki/sources/彭德怀.md",
+        "wiki/sources/周恩来.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false,
+      "note": "聚合式多跳：先找提及，再归纳各自语境"
+    },
+
+    {
+      "id": "cp-01",
+      "type": "comparison",
+      "question": "LangGraph 与 AutoGen 在定位上的核心差异是什么？",
+      "gold_docs": ["wiki/comparisons/三大AI框架对比.md"],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "cp-02",
+      "type": "comparison",
+      "question": "LangChain 与 LlamaIndex 各自更适合什么场景？",
+      "gold_docs": ["wiki/entities/LangChain.md", "wiki/entities/LlamaIndex.md"],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "cp-03",
+      "type": "comparison",
+      "question": "MCP 与 JSON-RPC 是什么关系？MCP 在 JSON-RPC 之上增加了什么？",
+      "gold_docs": [
+        "wiki/sources/MCP模型上下文协议.md",
+        "wiki/sources/MCP设计原理.md",
+        "wiki/concepts/JSON-RPC.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "cp-04",
+      "type": "comparison",
+      "question": "Disco-RAG 与传统 RAG 的区别是什么？",
+      "gold_docs": ["wiki/sources/disco.md", "wiki/concepts/discourse-guided-rag.md"],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "cp-05",
+      "type": "comparison",
+      "question": "《水浒传》和《红楼梦》在人物塑造方式上有何不同？",
+      "gold_docs": ["wiki/comparisons/四大名著人物塑造对比.md"],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+
+    {
+      "id": "ag-01",
+      "type": "aggregation",
+      "question": "知识库里关于 RAG 评估的方法和指标有哪些？请按类别归纳。",
+      "gold_docs": [
+        "wiki/sources/rag-triad.md",
+        "wiki/sources/RAG四维度评估体系.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "ag-02",
+      "type": "aggregation",
+      "question": "列出知识库中所有关于 Agent 循环/迭代的页面，并归纳它们的共同点。",
+      "gold_docs": [
+        "wiki/concepts/agent-loop.md",
+        "wiki/concepts/agent-iterative-loop.md",
+        "wiki/concepts/completion-promise.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "ag-03",
+      "type": "aggregation",
+      "question": "目前知识库里记录了哪些“已知的不知道”（Gap）？分别卡在哪一步？",
+      "gold_docs": [
+        "wiki/gaps/批量概念页定义句质量.md",
+        "wiki/gaps/知识遗忘与过时内容的最佳实践.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "ag-04",
+      "type": "aggregation",
+      "question": "知识库中有哪些 Decision 页面？各自记录了什么决策？",
+      "gold_docs": [
+        "wiki/decisions/采用RalphLoop作为评估迭代机制.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false,
+      "note": "库内另有 wiki/decisions/知识库类型归并规则.md，但当前索引未收录；重建索引后应补入 gold_docs"
+    },
+    {
+      "id": "ag-05",
+      "type": "aggregation",
+      "question": "把知识库架构相关的核心结论按主题归纳成 5 条。",
+      "gold_docs": [
+        "wiki/syntheses/2026知识库架构综合结论.md",
+        "wiki/comparisons/三大AI框架对比.md",
+        "wiki/comparisons/AI代理开放框架对比.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+
+    {
+      "id": "vf-01",
+      "type": "verification",
+      "question": "关于长征里程，知识库里给出了几种统计口径？如果只有一种，请指出缺少什么。",
+      "gold_docs": ["wiki/concepts/长征.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["一种", "口径"],
+      "note": "正确行为是指出单一来源，而不是用常识补第二种"
+    },
+    {
+      "id": "vf-02",
+      "type": "verification",
+      "question": "知识库对“平型关大捷”是否有独立条目？如果没有，现有内容能否支撑它的年份？",
+      "gold_docs": ["wiki/log.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "note": "实测：wiki/ 下无平型关独立页，仅 log 提及；考察是否会伪造来源"
+    },
+    {
+      "id": "vf-03",
+      "type": "verification",
+      "question": "批量生成的概念页定义句是否已经过抽样事实审核？",
+      "gold_docs": ["wiki/gaps/批量概念页定义句质量.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["尚未", "抽查"],
+      "note": "答案应为 partial / 未完成，而不是“已审核”"
+    },
+    {
+      "id": "vf-04",
+      "type": "verification",
+      "question": "知识库中“知识遗忘/过时内容”的处理标准是否已经确定？",
+      "gold_docs": ["wiki/gaps/知识遗忘与过时内容的最佳实践.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["尚未", "标准"],
+      "note": "答案应为“尚无公认标准”"
+    },
+
+    {
+      "id": "rp-01",
+      "type": "report",
+      "question": "基于知识库，给出一份 1934-1940 年的简要时间线。",
+      "gold_docs": ["wiki/concepts/长征.md", "wiki/concepts/百团大战.md"],
+      "must_cite": true,
+      "expect_abstain": false,
+      "expect_contains": ["1934", "1935", "1940"]
+    },
+    {
+      "id": "rp-02",
+      "type": "report",
+      "question": "写一份“知识库如何自演进”的简报，包含机制、评估和风险。",
+      "gold_docs": [
+        "wiki/syntheses/2026知识库架构综合结论.md",
+        "wiki/decisions/采用RalphLoop作为评估迭代机制.md",
+        "wiki/sources/ralph-loop.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "rp-03",
+      "type": "report",
+      "question": "总结知识库中“技术/RAG”域的现状：规模、核心概念、评估方法。",
+      "gold_docs": [
+        "wiki/overview.md",
+        "wiki/sources/rag-triad.md",
+        "wiki/sources/RAG四维度评估体系.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+    {
+      "id": "rp-04",
+      "type": "report",
+      "question": "基于现有 Gap 页面，给出一份本季度知识补充计划。",
+      "gold_docs": [
+        "wiki/gaps/批量概念页定义句质量.md",
+        "wiki/gaps/知识遗忘与过时内容的最佳实践.md"
+      ],
+      "must_cite": true,
+      "expect_abstain": false
+    },
+
+    {
+      "id": "ab-01",
+      "type": "abstention",
+      "question": "长征一共经过了几个省份？",
+      "gold_docs": [],
+      "must_cite": false,
+      "expect_abstain": true,
+      "note": "长征.md 只有里程，无省份数；答出具体数字即为越界"
+    },
+    {
+      "id": "ab-02",
+      "type": "abstention",
+      "question": "遵义会议的参会人员名单是什么？",
+      "gold_docs": [],
+      "must_cite": false,
+      "expect_abstain": true,
+      "note": "无独立页面，人物页也未列名单"
+    },
+    {
+      "id": "ab-03",
+      "type": "abstention",
+      "question": "2026 年诺贝尔文学奖得主是谁？",
+      "gold_docs": [],
+      "must_cite": false,
+      "expect_abstain": true,
+      "note": "明显超出本地知识库范围"
+    }
+  ]
+}

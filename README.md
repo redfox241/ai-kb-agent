@@ -123,11 +123,13 @@ auto_optimization/logs/   # 优化队列、历史、备份、审计
 ## 测试
 
 ```bash
-make test          # 全量测试（181 项）
+make test          # 全量测试（188 项）
 make arch          # 架构门禁
 make snapshot      # 更新单轮快照
 make gate          # 测试 + 架构 + 启动健康检查
 make e2e           # Chrome headless 页面冒烟
+make agent-gold    # 校验 Agent 评测集 gold_docs（磁盘 + 索引）
+make agent-eval    # Agent 配对评测基线（走 8002 /ask_smart）
 ```
 
 CI：`.github/workflows/test.yml`。
@@ -164,5 +166,6 @@ CI：`.github/workflows/test.yml`。
 - `docs/architecture-review.html`
 - `docs/detailed-design.html`
 - `docs/agent-framework-comparison.html`
+- `docs/agent-design.md`（研究员 Agent + 管家 Agent 技术设计）
 - `docs/multi-turn-design.md`
 - `docs/multiturn-incident-20261117.md`（“长征”会话多轮退化诊断与整改方案）

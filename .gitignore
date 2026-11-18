@@ -4,6 +4,7 @@ index/
 vault
 logs/
 var/
+eval/
 qa_archive/
 auto_optimization/logs/
 .pytest_cache/
