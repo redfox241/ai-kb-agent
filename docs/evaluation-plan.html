@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ai-kb-agent 三层评测体系、数据集、指标、门禁与 2026-11-19 的 27 题全量基线结果。">
 <title>评测方案梳理 · ai-kb-agent</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -230,6 +231,8 @@ code{
   background:var(--paper-3);border:1px solid var(--line);
   padding:1px 5px;color:var(--pine);white-space:nowrap;
 }
+/* 卡片/提示条里的长命令允许换行，避免窄屏把整页撑宽 */
+.card code,.note code,.tbl-note code{white-space:normal;overflow-wrap:anywhere}
 pre{
   font-family:var(--mono);font-size:12px;line-height:1.7;
   background:var(--ink);color:var(--mint);
@@ -308,9 +311,9 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
     <div>
       <p class="eyebrow">AI-KB-AGENT · 评测方案梳理 · 技术档案</p>
       <h1>评测<span class="alt">方案</span><br>三层体系</h1>
-      <p class="lede">本项目是一套本地知识库 RAG 问答服务（Markdown vault → 混合检索 → 多轮问答 → 引用校验）。评测不是附属功能，而是系统的核心回路：线内 LLM 打分落库、离线多轮确定性门禁、Agent 配对 gold-evidence 评测三层并行，并驱动夜间自优化守护与发布门禁。本报告基于 2026-11-18 的代码与设计文档快照，梳理全貌、核对口径、指出缺口。</p>
+      <p class="lede">本项目是一套本地知识库 RAG 问答服务（Markdown vault → 混合检索 → 多轮问答 → 引用校验）。评测不是附属功能，而是系统的核心回路：线内 LLM 打分落库、离线多轮确定性门禁、Agent 配对 gold-evidence 评测三层并行，并驱动夜间自优化守护与发布门禁。本报告基于 2026-11-19 的代码、设计文档与 27 题实测快照，梳理全貌、核对口径、给出结果。</p>
       <div class="chip-row">
-        <span class="chip clay">快照 2026-11-18</span>
+        <span class="chip clay">快照 2026-11-19</span>
         <span class="chip">docs/agent-design.md §8</span>
         <span class="chip">docs/multi-turn-design.md §11</span>
         <span class="chip">docs/detailed-design.html §08</span>
@@ -319,7 +322,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
       <div class="stats">
         <div><b>3</b><span>评测层次</span></div>
         <div><b>5</b><span>评测数据集</span></div>
-        <div><b>20+</b><span>指标项</span></div>
+        <div><b>27</b><span>全量基线题</span></div>
         <div><b>3</b><span>回归门禁</span></div>
       </div>
     </div>
@@ -347,7 +350,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
   </div>
   <div class="wrap cover-strip">
     <p>先修尺子，再写 runtime —— <em>评测是这个项目的第一优先级。</em></p>
-    <span class="snap">Snapshot 2026-11-18 · Vault 1,882 md · Index 27,898 chunks</span>
+    <span class="snap">Snapshot 2026-11-19 · 27 题基线 · Evidence Recall 0.708</span>
   </div>
 </header>
 
@@ -363,8 +366,8 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
     <a href="#s6"><span class="n">06</span><span>门禁与守护</span></a>
     <a href="#s7"><span class="n">07</span><span>缺口与路线</span></a>
     <div class="toc-meta">
-      Snapshot 2026-11-18<br>
-      5 datasets · 20+ metrics<br>
+      Snapshot 2026-11-19<br>
+      5 datasets · 27 baseline tasks<br>
       Source: docs + scripts
     </div>
   </nav>
@@ -401,7 +404,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
           <div class="chips"><span class="chip">agent_set.json</span><span class="chip">--verify-gold</span><span class="chip">--compare</span></div>
         </div>
       </div>
-      <figcaption><b>FIG.01 — 三层评测体系。</b>数据与脚本均为 2026-11-18 实测；三层通过 eval_records、overrides 与夜间守护互相联动，而非孤立运行。</figcaption>
+      <figcaption><b>FIG.01 — 三层评测体系。</b>数据与脚本均为 2026-11-19 实测；三层通过 eval_records、overrides 与夜间守护互相联动，而非孤立运行。</figcaption>
     </figure>
 
     <div class="grid-3">
@@ -450,7 +453,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
         </tbody>
       </table>
     </div>
-    <p class="tbl-note">注：规模为 2026-11-18 实测；多轮集设计目标为 ≥50 组，当前 18 组，见 §07。</p>
+    <p class="tbl-note">注：规模为 2026-11-19 实测；多轮集设计目标为 ≥50 组，当前 18 组，见 §07。</p>
 
     <h3>脚本与入口</h3>
     <div class="tbl-scroll reveal">
@@ -586,7 +589,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
       <div class="ghostnum" aria-hidden="true">05</div>
       <p class="kicker">PAIRED / Agent 配对评测</p>
       <h2>不只看答案对不对，更要看证据全不全</h2>
-      <p class="intro">27 题、6 类、每题带 gold_docs。同一题基线走 <code>/ask_smart</code>、实验组走 <code>/agent/run</code>，逐题配对比较。拒答判定带标记词表 + 覆盖标记，防止"常识蒙对"污染指标。</p>
+      <p class="intro">27 题、6 类、每题带 gold_docs。同一题基线走 <code>/ask_smart</code>、实验组走 <code>/agent/run</code>，逐题配对比较。拒答判定只看结论区，且只对拒答题计分；避免“常识蒙对”和“答案里提了一句未找到”污染指标。</p>
     </div>
 
     <h3>指标与目标</h3>
@@ -619,28 +622,116 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
       </table>
     </div>
 
-    <h3>冒烟结果（2026-11-18 · 8002 基线 · 3 题验证脚手架）</h3>
+    <h3>全量基线（2026-11-19 · 8002 · 27 题）</h3>
+    <div class="grid-4">
+      <div class="card pine reveal"><div class="c-k">样本 / 失败</div><div class="c-t">27 / 0</div><p>六类任务全部返回，无请求错误</p></div>
+      <div class="card accent reveal"><div class="c-k">Evidence Recall</div><div class="c-t">0.708</div><p>48 个 gold 命中 32 个（全局 0.667）</p></div>
+      <div class="card accent reveal"><div class="c-k">Full Recall</div><div class="c-t">0.542</div><p>13 / 24 道有 gold 的题拿全证据</p></div>
+      <div class="card pine reveal"><div class="c-k">Abstention</div><div class="c-t">3 / 3</div><p>拒答题全部正确拒答</p></div>
+    </div>
+    <div class="grid-4" style="margin-top:16px">
+      <div class="card reveal"><div class="c-k">P50 / P90</div><div class="c-t">9.9s / 15.8s</div><p>最慢一题 34.1s（报告类）</p></div>
+      <div class="card reveal"><div class="c-k">平均来源</div><div class="c-t">9.8 篇</div><p>每题固定 Top-10 上下</p></div>
+      <div class="card reveal"><div class="c-k">Constraint</div><div class="c-t">6 / 7</div><p><code>expect_contains</code> 命中率 0.857</p></div>
+      <div class="card reveal"><div class="c-k">Trace</div><div class="c-t">9 段</div><p>流程事件数，不是 Agent 工具步数</p></div>
+    </div>
+
     <figure class="fig reveal">
-      <svg viewBox="0 0 720 150" width="100%" role="img" aria-label="冒烟测试三题的证据召回条形图：mh-02 为 0.50，vf-02 为 1.00，ab-01 正确拒答">
-        <text class="axis" x="0" y="12">FIG.03 — 冒烟 3 题 Evidence Recall（agent-design.md §8.5 实测）</text>
-        <g font-family="IBM Plex Mono" font-size="10" fill="#455249">
-          <text x="128" y="42" text-anchor="end">mh-02 · multi_hop</text>
-          <rect x="138" y="32" width="234" height="13" fill="#B24F2C"/>
-          <text x="380" y="42" fill="#B24F2C" font-weight="500">0.50 — 答案对，证据召回不全</text>
-          <text x="128" y="72" text-anchor="end">vf-02 · verification</text>
-          <rect x="138" y="62" width="468" height="13" fill="#1E4D3D"/>
-          <text x="614" y="72" fill="#17231E">1.00</text>
-          <text x="128" y="102" text-anchor="end">ab-01 · abstention</text>
-          <rect x="138" y="92" width="468" height="13" fill="#1E4D3D" opacity=".55"/>
-          <text x="614" y="102" fill="#17231E">✅ 正确拒答</text>
+      <svg viewBox="0 0 760 220" width="100%" role="img" aria-label="按类型统计的 Evidence Recall 条形图：报告 0.42、聚合 0.53、核验 0.75、多跳 0.78、对比 1.00，目标线为 0.80">
+        <text class="axis" x="0" y="12">FIG.03 — 按类型的 Evidence Recall（27 题全量基线 · 2026-11-19）</text>
+          <g font-family="IBM Plex Mono" font-size="10" fill="#455249">
+          <text x="142" y="48" text-anchor="end">报告 · report</text>
+          <rect x="152" y="33" width="175" height="14" fill="#B24F2C" opacity="1"/>
+          <text x="335" y="48" fill="#B24F2C" font-weight="500">0.42</text>
+          <text x="142" y="80" text-anchor="end">聚合 · aggregation</text>
+          <rect x="152" y="65" width="224" height="14" fill="#8FA88B" opacity="1"/>
+          <text x="384" y="80" fill="#8FA88B" font-weight="500">0.53</text>
+          <text x="142" y="112" text-anchor="end">核验 · verification</text>
+          <rect x="152" y="97" width="315" height="14" fill="#2F6B54" opacity="1"/>
+          <text x="475" y="112" fill="#2F6B54" font-weight="500">0.75</text>
+          <text x="142" y="144" text-anchor="end">多跳 · multi_hop</text>
+          <rect x="152" y="129" width="327" height="14" fill="#1E4D3D" opacity="0.8"/>
+          <text x="487" y="144" fill="#1E4D3D" font-weight="500">0.78</text>
+          <text x="142" y="176" text-anchor="end">对比 · comparison</text>
+          <rect x="152" y="161" width="420" height="14" fill="#1E4D3D" opacity="1"/>
+          <text x="580" y="176" fill="#1E4D3D" font-weight="500">1.00</text>
+          </g>
+        <g stroke="#C2C9BB">
+          <line x1="152" y1="22" x2="152" y2="184"/>
+          <line x1="362" y1="22" x2="362" y2="184"/>
+          <line x1="572" y1="22" x2="572" y2="184"/>
         </g>
-        <g stroke="#C2C9BB"><line x1="138" y1="20" x2="138" y2="115"/><line x1="372" y1="20" x2="372" y2="115"/><line x1="606" y1="20" x2="606" y2="115"/></g>
-        <text class="axis" x="138" y="128" text-anchor="middle">0.0</text>
-        <text class="axis" x="372" y="128" text-anchor="middle">0.5</text>
-        <text class="axis" x="606" y="128" text-anchor="middle">1.0</text>
+        <line x1="488" y1="22" x2="488" y2="184" stroke="#B24F2C" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>
+        <text class="axis" x="488" y="196" text-anchor="middle" fill="#B24F2C">目标 0.80</text>
+        <text class="axis" x="152" y="196" text-anchor="middle">0.0</text>
+        <text class="axis" x="362" y="196" text-anchor="middle">0.5</text>
+        <text class="axis" x="572" y="196" text-anchor="middle">1.0</text>
       </svg>
-      <figcaption><b>FIG.03 — 关键发现：</b>mh-02（长征会议距百团大战几年）答案算对了"5 年"，但 sources 只含 <code>长征.md</code>，<code>百团大战.md</code> 缺失。这印证了"只看 LLM 分数会漏掉多跳证据不全"——正是引入 gold evidence 的理由。样本仅 3 题，用于验证脚手架，非完整基线。</figcaption>
+      <figcaption><b>FIG.03 — 短板不在“找单页”，在“把多页组织成答案”。</b>对比类 5 题全部拿全 gold 证据；报告类 4 题一个都没拿全（0.42 / full 0.00），聚合类 0.53 / full 0.40。拒答 3 题不计 Recall，单独统计为 3/3。样本 27 题，跑在 8002 旧索引（27,249 chunks @ 11-11），重建索引后需复跑。</figcaption>
     </figure>
+
+    <h4>按类型拆解</h4>
+    <div class="tbl-scroll reveal">
+      <table>
+        <thead><tr><th>类型</th><th class="num">题数</th><th class="num">Evidence Recall</th><th class="num">Full Recall</th><th class="num">平均来源 / 拒答</th><th class="num">P50</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">multi_hop</td><td class="num">6</td><td class="num">0.778</td><td class="num">0.500</td><td class="num">10.0</td><td class="num">6.6s</td></tr>
+          <tr><td class="mono">comparison</td><td class="num">5</td><td class="num">1.000</td><td class="num">1.000</td><td class="num">8.8</td><td class="num">10.6s</td></tr>
+          <tr><td class="mono">aggregation</td><td class="num">5</td><td class="num">0.533</td><td class="num">0.400</td><td class="num">10.0</td><td class="num">12.3s</td></tr>
+          <tr><td class="mono">verification</td><td class="num">4</td><td class="num">0.750</td><td class="num">0.750</td><td class="num">10.0</td><td class="num">8.8s</td></tr>
+          <tr><td class="mono">report</td><td class="num">4</td><td class="num">0.417</td><td class="num">0.000</td><td class="num">10.0</td><td class="num">19.2s</td></tr>
+          <tr><td class="mono">abstention</td><td class="num">3</td><td class="num">—</td><td class="num">—</td><td class="num">3/3 拒答</td><td class="num">7.2s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tbl-note">Evidence Recall 为各题 recall 的算术平均（macro）；全局命中率 32/48=0.667。全召回分母为“有 gold_docs 的题”；拒答题分母为 3。</p>
+
+    <h4>逐题结果（按 Recall 升序）</h4>
+    <div class="tbl-scroll reveal">
+      <table>
+        <thead><tr><th>ID</th><th>类型</th><th class="num">Recall</th><th class="num">Full</th><th>证据缺口 / 备注</th><th class="num">耗时</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ag-04</td><td class="mono">aggregation</td><td class="num hl">0.00</td><td class="num">·</td><td><code>decisions/采用RalphLoop作为评估迭代机制</code></td><td class="num">7.4s</td></tr>
+          <tr><td class="mono">vf-01</td><td class="mono">verification</td><td class="num hl">0.00</td><td class="num">·</td><td><code>concepts/长征</code></td><td class="num">7.3s</td></tr>
+          <tr><td class="mono">ag-02</td><td class="mono">aggregation</td><td class="num hl">0.33</td><td class="num">·</td><td><code>concepts/agent-loop</code>、<code>concepts/completion-promise</code></td><td class="num">11.8s</td></tr>
+          <tr><td class="mono">ag-05</td><td class="mono">aggregation</td><td class="num hl">0.33</td><td class="num">·</td><td><code>comparisons/三大AI框架对比</code>、<code>comparisons/AI代理开放框架对比</code></td><td class="num">13.7s</td></tr>
+          <tr><td class="mono">rp-02</td><td class="mono">report</td><td class="num hl">0.33</td><td class="num">·</td><td><code>decisions/采用RalphLoop作为评估迭代机制</code>、<code>sources/ralph-loop</code></td><td class="num">17.3s</td></tr>
+          <tr><td class="mono">rp-03</td><td class="mono">report</td><td class="num hl">0.33</td><td class="num">·</td><td><code>overview</code>、<code>sources/rag-triad</code></td><td class="num">34.1s</td></tr>
+          <tr><td class="mono">mh-02</td><td class="mono">multi_hop</td><td class="num">0.50</td><td class="num">·</td><td><code>concepts/百团大战</code></td><td class="num">5.6s</td></tr>
+          <tr><td class="mono">mh-06</td><td class="mono">multi_hop</td><td class="num">0.50</td><td class="num">·</td><td><code>sources/毛泽东</code>、<code>sources/彭德怀</code></td><td class="num">6.6s</td></tr>
+          <tr><td class="mono">rp-01</td><td class="mono">report</td><td class="num">0.50</td><td class="num">·</td><td><code>concepts/百团大战</code></td><td class="num">12.2s</td></tr>
+          <tr><td class="mono">rp-04</td><td class="mono">report</td><td class="num">0.50</td><td class="num">·</td><td><code>gaps/批量概念页定义句质量</code></td><td class="num">19.2s</td></tr>
+          <tr><td class="mono">mh-03</td><td class="mono">multi_hop</td><td class="num">0.67</td><td class="num">·</td><td><code>sources/毛泽东</code></td><td class="num">12.0s</td></tr>
+          <tr><td class="mono">ag-01</td><td class="mono">aggregation</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">14.7s</td></tr>
+          <tr><td class="mono">ag-03</td><td class="mono">aggregation</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">12.3s</td></tr>
+          <tr><td class="mono">cp-01</td><td class="mono">comparison</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">10.6s</td></tr>
+          <tr><td class="mono">cp-02</td><td class="mono">comparison</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">9.0s</td></tr>
+          <tr><td class="mono">cp-03</td><td class="mono">comparison</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">13.4s</td></tr>
+          <tr><td class="mono">cp-04</td><td class="mono">comparison</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">15.8s</td></tr>
+          <tr><td class="mono">cp-05</td><td class="mono">comparison</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">9.9s</td></tr>
+          <tr><td class="mono">mh-01</td><td class="mono">multi_hop</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">4.0s</td></tr>
+          <tr><td class="mono">mh-04</td><td class="mono">multi_hop</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">9.8s</td></tr>
+          <tr><td class="mono">mh-05</td><td class="mono">multi_hop</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">10.8s</td></tr>
+          <tr><td class="mono">vf-02</td><td class="mono">verification</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">9.5s</td></tr>
+          <tr><td class="mono">vf-03</td><td class="mono">verification</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">8.8s</td></tr>
+          <tr><td class="mono">vf-04</td><td class="mono">verification</td><td class="num">1.00</td><td class="num">✓</td><td>全部命中</td><td class="num">7.9s</td></tr>
+          <tr><td class="mono">ab-01</td><td class="mono">abstention</td><td class="num">—</td><td class="num">—</td><td>正确拒答</td><td class="num">7.2s</td></tr>
+          <tr><td class="mono">ab-02</td><td class="mono">abstention</td><td class="num">—</td><td class="num">—</td><td>正确拒答</td><td class="num">7.6s</td></tr>
+          <tr><td class="mono">ab-03</td><td class="mono">abstention</td><td class="num">—</td><td class="num">—</td><td>正确拒答</td><td class="num">4.1s</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tbl-note">题目全文与 gold_docs 见 <code>auto_optimization/benchmark/agent_set.json</code>；缺失证据按路径末两段显示。</p>
+
+    <div class="note clay reveal">
+      <b>口径修正（2026-11-19）：</b>首轮全量跑出 <code>abstain_acc=0.185</code>，逐条读答案后发现是判定器缺陷：它对全文匹配“未找到”，把大量正确答案误判为拒答，反过来又会把明确拒答的长答案判成未拒答。现已改为只看结论区前 240 字，并且只对拒答题计分；修正后 3/3。旧数字不要与新快照混用。
+    </div>
+    <div class="note reveal">
+      <b>这张表还读不出的：</b>基线 <code>/ask_smart</code> 不返回 <code>citations</code> 与 <code>usage</code>，所以 <code>citation_rate=1.0</code> 只代表“响应里有来源”，不是引用精度；<code>tokens</code> 与工具步数也无法测。这两项要等 <code>/agent/run</code> 落地后才有意义。
+    </div>
+    <div class="note clay reveal">
+      <b>跑评测本身也会写队列：</b>本轮 27 题在 <code>pending_queue.json</code> 留下 5 条低分记录（<code>affected_users=auto_eval</code>）。守护进程当时未运行，已手动清空；若守护在线，这些记录会直接触发自优化。评测入口应增加 <code>no_enqueue</code> 开关，或固定使用独立实例。
+    </div>
 
     <h3>P0 前置：索引新鲜度（修好之前一切 gold 召回都被污染）</h3>
     <div class="grid-4">
@@ -716,7 +807,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
     <div class="sec-head reveal">
       <div class="ghostnum" aria-hidden="true">07</div>
       <p class="kicker">GAP & ROADMAP / 缺口与路线</p>
-      <h2>尺子还有五处没校准，P0 之前不写 runtime</h2>
+      <h2>尺子校准了一半，P0 之前不写 runtime</h2>
       <p class="intro">方案整体已体系化，但文档明确列出了一批未闭环项。按"会直接污染结论"的优先级排序如下。</p>
     </div>
 
@@ -730,6 +821,9 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
           <tr><td class="num">4</td><td><code>TOP_K</code> 死参数</td><td>在 ALLOWED_PARAMS 中但 bootstrap.py 从未读取</td><td>接线或移除，避免优化器做无效变更</td></tr>
           <tr><td class="num">5</td><td>Agent runtime 未落地</td><td>agent 模式直接抛 ModelUnavailable；agent_set 只能跑基线</td><td>按分期计划 P1 再实现，P0 先修尺子</td></tr>
           <tr><td class="num">6</td><td>多轮集规模与指标未达标</td><td>设计目标 ≥50 组，当前 18 组；Turn Consistency / Clarification 脚本未实现</td><td>扩集 + 补脚本判定字段</td></tr>
+          <tr><td class="num">7</td><td>拒答判定器方向性误判</td><td>旧口径 0.185；逐条阅读后实际 3/3</td><td class="hl">已修正：结论区判定 + 仅拒答题计分（2026-11-19）</td></tr>
+          <tr><td class="num">8</td><td>基线引用 / 成本指标不可测</td><td>/ask_smart 无 citations、usage；citation_rate 实为“来源存在率”</td><td>Agent 响应补齐 citations.ok 与 usage，再谈精度与预算</td></tr>
+          <tr><td class="num">9</td><td>评测写回优化队列</td><td>27 题基线留下 5 条 auto_eval 低分记录</td><td>评测入口加 no_enqueue 或固定独立实例；跑前清队列</td></tr>
         </tbody>
       </table>
     </div>
@@ -755,7 +849,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
     </div>
 
     <div class="note reveal">
-      <b>本报告口径说明：</b>所有数字与结论均摘自仓库内文档与脚本实测（docs/agent-design.md、docs/multi-turn-design.md、docs/detailed-design.html、scripts/eval_multiturn.py、scripts/eval_agent.py、optimization/utils/scorer.py、optimization/agent/daily_benchmark_guard.py），快照日期 2026-11-18。FIG.03 样本仅 3 题，为脚手架冒烟而非完整基线，不可外推。
+      <b>本报告口径说明：</b>方案部分摘自仓库内文档与脚本（docs/agent-design.md、docs/multi-turn-design.md、docs/detailed-design.html、scripts/eval_multiturn.py、optimization/utils/scorer.py、optimization/agent/daily_benchmark_guard.py）；结果部分为 2026-11-19 在 8002 上执行 <code>eval_agent.py --mode baseline</code> 的 27 题全量快照。FIG.03 为真实结果，但索引未重建、单次采样，不能当作最终门禁结论。
     </div>
 
     <div class="end-mark">END OF REPORT · ai-kb-agent 评测方案</div>
@@ -765,7 +859,7 @@ footer .mono{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
 
 <footer>
   <div class="wrap cols">
-    <p>评测方案梳理 · ai-kb-agent — 本地知识库 RAG 服务（Markdown vault → 混合检索 → 多轮问答 → 引用校验 → 评估与自优化）。生成于 2026-11-18，基于当日代码与文档快照。</p>
+    <p>评测方案梳理 · ai-kb-agent — 本地知识库 RAG 服务（Markdown vault → 混合检索 → 多轮问答 → 引用校验 → 评估与自优化）。生成于 2026-11-19，基线结果来自当日 8002 实测。</p>
     <p class="mono">FILE: docs/evaluation-plan.html · PRINT-READY</p>
   </div>
 </footer>

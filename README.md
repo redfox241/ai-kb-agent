@@ -166,6 +166,7 @@ CI：`.github/workflows/test.yml`。
 - `docs/architecture-review.html`
 - `docs/detailed-design.html`
 - `docs/agent-framework-comparison.html`
+- `docs/evaluation-plan.html`（三层评测体系 + 27 题全量基线结果）
 - `docs/agent-design.md`（研究员 Agent + 管家 Agent 技术设计）
 - `docs/multi-turn-design.md`
 - `docs/multiturn-incident-20261117.md`（“长征”会话多轮退化诊断与整改方案）
