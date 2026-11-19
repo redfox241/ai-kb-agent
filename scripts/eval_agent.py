@@ -227,13 +227,20 @@ def response_paths(data: dict) -> set[str]:
 
 
 def is_abstain(text: str) -> bool:
+    """只看结论区（前 240 字）判断是否拒答。
+
+    早期实现对全文做标记词匹配，导致「答案里某一段说未找到」被误判为整题拒答；
+    同时 OVERRIDE_MARKERS 又会让明确拒答的长答案被判成未拒答。两个方向都不稳。
+    结论先行是现有 prompt 的固定结构，因此只检查开头，并只对拒答题计分。
+    """
     value = (text or "").strip()
     if not value:
         return True
-    if not any(marker in value for marker in ABSTAIN_MARKERS):
+    head = value[:240]
+    if not any(marker in head for marker in ABSTAIN_MARKERS):
         return False
-    # 同时给出库外答案时，不算严格拒答。
-    if any(marker in value for marker in OVERRIDE_MARKERS) and len(value) > 120:
+    # 开头就给出库外答案（而不是先说“未找到”）时，不算严格拒答。
+    if any(marker in head for marker in OVERRIDE_MARKERS):
         return False
     return True
 
@@ -241,15 +248,14 @@ def is_abstain(text: str) -> bool:
 def usage_of(data: dict) -> dict:
     usage = data.get("usage") or {}
     memory = data.get("memory") or {}
-    steps = data.get("steps")
-    n_steps = usage.get("steps") if isinstance(usage, dict) else None
-    if n_steps is None and isinstance(steps, list):
-        n_steps = len(steps)
+    # 注意：/ask_smart 的 steps 是 trace 事件列表，不是工具步数；
+    # 只有 Agent 响应里的 usage.steps 才是预算口径。
+    steps = usage.get("steps") if isinstance(usage, dict) else None
     tokens = usage.get("prompt_tokens")
     if tokens is None:
         tokens = memory.get("prompt_tokens")
     return {
-        "steps": n_steps,
+        "steps": steps,
         "prompt_tokens": tokens,
     }
 
@@ -271,7 +277,11 @@ def evaluate_task(client: httpx.Client, base: str, endpoint: str, task: dict,
 
     expect_abstain = bool(task.get("expect_abstain"))
     abstained = is_abstain(answer) if not error else False
-    abstain_ok = (abstained == expect_abstain) if not error else False
+    # 拒答准确率只对拒答题计分：非拒答题里的“未找到”通常只是某个子问题缺证据。
+    if expect_abstain:
+        abstain_ok = abstained if not error else False
+    else:
+        abstain_ok = None
 
     expect_contains = task.get("expect_contains") or []
     contains_ok = all(term in answer for term in expect_contains) if expect_contains else None
@@ -280,11 +290,14 @@ def evaluate_task(client: httpx.Client, base: str, endpoint: str, task: dict,
     if isinstance(citations, dict) and "ok" in citations:
         citation_ok = bool(citations.get("ok"))
     elif task.get("must_cite"):
+        # 基线 /ask_smart 不返回 citations，只能验证“有没有来源”，
+        # 不能等同于引用精度；Agent 模式才校验 citations.ok。
         citation_ok = bool(data.get("evidence") or data.get("sources"))
     else:
         citation_ok = None
 
     usage = usage_of(data)
+    trace_steps = len(data["steps"]) if isinstance(data.get("steps"), list) else None
     return {
         "id": task.get("id"),
         "type": task.get("type"),
@@ -293,7 +306,9 @@ def evaluate_task(client: httpx.Client, base: str, endpoint: str, task: dict,
         "error": error,
         "latency_ms": data.get("_elapsed_ms", elapsed),
         "steps": usage["steps"],
+        "trace_steps": trace_steps,
         "prompt_tokens": usage["prompt_tokens"],
+        "sources_count": len(data.get("sources") or []),
         "gold_docs": gold,
         "gold_hit": hit,
         "gold_recall": round(recall, 4) if recall is not None else None,
@@ -342,6 +357,8 @@ def aggregate(rows: list[dict]) -> dict:
             "contains_acc": _rate([r.get("contains_ok") for r in items]),
             "citation_rate": _rate([r.get("citation_ok") for r in items]),
             "avg_steps": _mean([r.get("steps") for r in items]),
+            "avg_trace_steps": _mean([r.get("trace_steps") for r in items]),
+            "avg_sources": _mean([r.get("sources_count") for r in items]),
             "avg_tokens": _mean([r.get("prompt_tokens") for r in items]),
             "p50_latency_ms": _percentile([r.get("latency_ms") for r in items], 0.5),
             "p90_latency_ms": _percentile([r.get("latency_ms") for r in items], 0.9),
@@ -483,7 +500,12 @@ def main(argv=None) -> int:
         for index, task in enumerate(tasks, 1):
             row = evaluate_task(client, args.base, endpoint, task, args.timeout)
             rows.append(row)
-            flag = "ERR" if row["error"] else ("ABSTAIN" if row["abstained"] else "OK")
+            if row["error"]:
+                flag = "ERR"
+            elif task.get("expect_abstain") and row["abstained"]:
+                flag = "ABSTAIN"
+            else:
+                flag = "OK"
             recall = "-" if row["gold_recall"] is None else f"{row['gold_recall']:.2f}"
             print(f"[{index:>2}/{len(tasks)}] {row['id']:<8} {flag:<7} "
                   f"recall={recall} {row['latency_ms']}ms"
