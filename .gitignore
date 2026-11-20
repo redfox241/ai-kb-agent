@@ -23,3 +23,6 @@ eval_records.db
 
 backups/
 *.pid
+
+__pycache__/
+*.py[cod]
